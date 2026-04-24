@@ -48,6 +48,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
         const isUpperDice = cIdx >= 0 && cIdx <= 5
         const entry = playerScores[cIdx]
         const hasUpperEntry = isUpperDice && !!entry
+        const hasKniffelBonus = entry?.isKniffel === true  // ← das hat gefehlt
 
         let color = 'white'
         if (isUpperSum && entry) {
@@ -68,15 +69,12 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               justifyContent: 'center',
               fontSize: 16,
               fontWeight: isSumRow ? 'bold' : 'normal',
-              backgroundColor: hasUpperEntry
-                ? 'rgba(103,58,183,0.18)'
-                : isSumRow ? 'rgba(255,255,255,0.07)' : 'transparent',
+              
               borderBottom: isUpperSum
                 ? '2px solid #673ab7'
                 : '1px solid rgba(255,255,255,0.1)',
               borderRight: '1px solid rgba(255,255,255,0.1)',
-              outline: hasUpperEntry ? '2px solid #673ab7' : 'none',
-              outlineOffset: '-2px',
+              backgroundColor: isSumRow ? 'rgba(255,255,255,0.07)' : 'transparent',
               color,
               cursor: isSumRow ? 'default' : 'pointer',
               userSelect: 'none',
@@ -84,7 +82,6 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               position: 'relative',
             }}
           >
-            {/* Kringel bei Kniffel-Bonus in der oberen Hälfte */}
             {hasKniffelBonus && (
               <span style={{
                 position: 'absolute',

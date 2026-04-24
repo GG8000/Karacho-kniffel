@@ -63,6 +63,7 @@ export default function App() {
   const [modal, setModal] = useState(null)
   const [addDialog, setAddDialog] = useState(false)
   const [restartDialog, setRestartDialog] = useState(false)
+  const [resetDialog, setResetDialog] = useState(false)
   const [newName, setNewName] = useState('')
   const inputRef = useRef(null)
 

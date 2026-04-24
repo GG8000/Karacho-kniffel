@@ -81,8 +81,20 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               cursor: isSumRow ? 'default' : 'pointer',
               userSelect: 'none',
               WebkitTapHighlightColor: 'transparent',
+              position: 'relative',
             }}
           >
+            {/* Kringel bei Kniffel-Bonus in der oberen Hälfte */}
+            {hasKniffelBonus && (
+              <span style={{
+                position: 'absolute',
+                inset: '4px',
+                borderRadius: '50%',
+                border: '2px solid #f5a623',
+                pointerEvents: 'none',
+                boxShadow: '0 0 6px rgba(245,166,35,0.5)',
+              }} />
+            )}
             {getCellText(cIdx)}
           </div>
         )

@@ -14,6 +14,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, onClose, onSav
     setSliderVal(15)
   }, [cIdx])
 
+
   const diceButtons = Array.from({ length: 6 }, (_, index) => {
     const label = index === 0 ? 'X' : `${index}x`
     const val = index === 0 ? -((cIdx + 1) * 3) : (index - 3) * (cIdx + 1)
@@ -56,7 +57,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, onClose, onSav
               <button className="btn-delete" onClick={onDelete}>
                 🗑 Löschen
               </button>
-              <button className="btn-primary" onClick={() => onSave(sliderVal)}>
+              <button className="btn-primary" onClick={() => onSave(sliderVal, false)}>
                 Bestätigen
               </button>
             </div>
@@ -69,18 +70,22 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, onClose, onSav
 
             {isUpperDice ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-                {diceButtons.map(({ label, val }) => (
-                  <button key={label} className="btn-grid-item" onClick={() => onSave(val)}>
+                {diceButtons.map(({ label, val }, index) => (
+                  <button
+                    key={label}
+                    className="btn-grid-item"
+                    onClick={() => onSave(val, index === 5)}  // ← 5x = automatisch Kniffel
+                  >
                     {label}
                   </button>
                 ))}
               </div>
             ) : (
               <div style={{ display: 'flex', justifyContent: 'space-evenly' }}>
-                <button className="btn-primary" onClick={() => onSave(FIX_POINTS[catName])}>
+                <button className="btn-primary" onClick={() => onSave(FIX_POINTS[catName], false)}>
                   OK
                 </button>
-                <button className="btn-grid-item" onClick={() => onSave(0)}>
+                <button className="btn-grid-item" onClick={() => onSave(0, false)}>
                   X
                 </button>
               </div>

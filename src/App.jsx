@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import PlayerColumn from './components/PlayerColumn'
 import ScoreInputModal from './components/ScoreInputModal'
 import { calculateUpperBalance, calculateTotal } from './logic/calculator'
@@ -20,7 +20,44 @@ function refreshTotals(playerScores) {
   }
 }
 
+function LoadingScreen({ onDone }) {
+  const videoRef = useRef(null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    // Manuell starten — iOS braucht das
+    video.play().catch(() => {
+      // Autoplay vom Browser blockiert → sofort weitermachen
+      onDone()
+    })
+
+    // Fallback: nach 5 Sekunden sowieso weitermachen
+    const fallback = setTimeout(onDone, 5000)
+    return () => clearTimeout(fallback)
+  }, [])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: '#000',
+      zIndex: 9999,
+    }}>
+      <video
+        ref={videoRef}
+        src="/splash.mp4"
+        muted
+        playsInline
+        onEnded={onDone}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+    </div>
+  )
+}
+
 export default function App() {
+  const [loading, setLoading] = useState(true)
   const [players, setPlayers] = useState(['Troni'])
   const [scores, setScores] = useState({ 0: {} })
   const [modal, setModal] = useState(null)
@@ -29,10 +66,13 @@ export default function App() {
   const [newName, setNewName] = useState('')
   const inputRef = useRef(null)
 
-  function updateScore(pIdx, cIdx, value) {
+  function updateScore(pIdx, cIdx, value, isKniffel = false) {
     setScores(prev => {
       const now = Date.now()
-      const playerScores = { ...prev[pIdx], [cIdx]: { value, timestamp: now } }
+      const playerScores = {
+        ...prev[pIdx],
+        [cIdx]: { value, timestamp: now, isKniffel }
+      }
       return { ...prev, [pIdx]: refreshTotals(playerScores) }
     })
     setModal(null)
@@ -106,7 +146,7 @@ export default function App() {
           cIdx={modal.cIdx}
           categories={CATEGORIES}
           onClose={() => setModal(null)}
-          onSave={val => updateScore(modal.pIdx, modal.cIdx, val)}
+          onSave={(val, isKniffel) => updateScore(modal.pIdx, modal.cIdx, val, isKniffel)}
           onDelete={() => removeScore(modal.pIdx, modal.cIdx)}
         />
       )}
@@ -142,6 +182,19 @@ export default function App() {
             <div className="dialog-actions">
               <button className="btn-outline" onClick={() => setAddDialog(false)}>Abbrechen</button>
               <button className="btn-primary" onClick={handleAddPlayer}>Hinzufügen</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resetDialog && (
+        <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setResetDialog(false)}>
+          <div className="dialog">
+            <div className="dialog-title">Spiel zurücksetzen?</div>
+            <p className="dialog-text">Alle Punkte und Spieler werden gelöscht.</p>
+            <div className="dialog-actions">
+              <button className="btn-outline" onClick={() => setResetDialog(false)}>Abbrechen</button>
+              <button className="btn-danger" onClick={resetGame}>Zurücksetzen</button>
             </div>
           </div>
         </div>

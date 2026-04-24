@@ -25,6 +25,7 @@ export default function App() {
   const [scores, setScores] = useState({ 0: {} })
   const [modal, setModal] = useState(null)
   const [addDialog, setAddDialog] = useState(false)
+  const [restartDialog, setRestartDialog] = useState(false)
   const [newName, setNewName] = useState('')
   const inputRef = useRef(null)
 
@@ -62,6 +63,12 @@ export default function App() {
     setTimeout(() => inputRef.current?.focus(), 50)
   }
 
+  function handleRestart() {
+    setPlayers(['Troni'])
+    setScores({ 0: {} })
+    setRestartDialog(false)
+  }
+
   return (
     <div className="app">
       <div className="app-bar">KNIFFEL BLOCK</div>
@@ -89,8 +96,8 @@ export default function App() {
       </div>
 
       <div className="footer">
-        <button className="btn-outline">HISTORY</button>
-        <button className="btn-primary" onClick={openAddDialog}>ADD PLAYER</button>
+        <button className="btn-danger" onClick={() => setRestartDialog(true)}>RESTART</button>
+        <button className="btn-primary" onClick={openAddDialog}>SPIELER +</button>
       </div>
 
       {modal && (
@@ -102,6 +109,21 @@ export default function App() {
           onSave={val => updateScore(modal.pIdx, modal.cIdx, val)}
           onDelete={() => removeScore(modal.pIdx, modal.cIdx)}
         />
+      )}
+
+      {restartDialog && (
+        <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setRestartDialog(false)}>
+          <div className="dialog">
+            <div className="dialog-title">Spiel neu starten?</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
+              Alle Punkte werden gelöscht.
+            </div>
+            <div className="dialog-actions">
+              <button className="btn-outline" onClick={() => setRestartDialog(false)}>Abbrechen</button>
+              <button className="btn-danger" onClick={handleRestart}>Neu starten</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {addDialog && (

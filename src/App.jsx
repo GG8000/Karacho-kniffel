@@ -58,7 +58,7 @@ function LoadingScreen({ onDone }) {
 
 export default function App() {
   const [loading, setLoading] = useState(true)
-  const [players, setPlayers] = useState(['Troni'])
+  const [players, setPlayers] = useState([''])
   const [scores, setScores] = useState({ 0: {} })
   const [modal, setModal] = useState(null)
   const [addDialog, setAddDialog] = useState(false)

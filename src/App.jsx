@@ -40,7 +40,7 @@ function LoadingScreen({ onDone }) {
     const video = videoRef.current;
     if (!video) return;
     video.play().catch(() => onDone());
-    const fallback = setTimeout(onDone, 5000);
+    const fallback = setTimeout(onDone, 10000);
     return () => clearTimeout(fallback);
   }, []);
   return (
@@ -68,7 +68,7 @@ export default function App() {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
+    const timer = setTimeout(() => setLoading(false), 10000);
     return () => clearTimeout(timer);
   }, []);
 

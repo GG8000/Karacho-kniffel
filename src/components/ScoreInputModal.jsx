@@ -57,6 +57,9 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, onClose, onSav
               <button className="btn-delete" onClick={onDelete}>
                 🗑 Löschen
               </button>
+              <button className="btn-delete" onClick={() => {setSliderVal(0)}}>
+                ❌ Streichen 
+              </button>
               <button className="btn-primary" onClick={() => onSave(sliderVal, false)}>
                 Bestätigen
               </button>
@@ -86,7 +89,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, onClose, onSav
                   OK
                 </button>
                 <button className="btn-grid-item" onClick={() => onSave(0, false)}>
-                  X
+                  Streichen
                 </button>
               </div>
             )}

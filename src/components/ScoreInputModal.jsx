@@ -57,7 +57,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, onClose, onSav
               <button className="btn-delete" onClick={onDelete}>
                 🗑 Löschen
               </button>
-              <button className="btn-delete" onClick={() => {setSliderVal(0)}}>
+              <button className="btn-delete" onClick={() => onSave(0, false)}>
                 ❌ Streichen 
               </button>
               <button className="btn-primary" onClick={() => onSave(sliderVal, false)}>

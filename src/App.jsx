@@ -3,6 +3,7 @@ import PlayerColumn from './components/PlayerColumn'
 import ScoreInputModal from './components/ScoreInputModal'
 import { calculateUpperBalance, calculateTotal } from './logic/calculator'
 import './App.css'
+import { Analytics } from '@vercel/analytics/react'
 
 const CATEGORIES = [
   '1', '2', '3', '4', '5', '6', 'SUMME',
@@ -200,6 +201,7 @@ export default function App() {
           </div>
         </div>
       )}
+    <Analytics />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { calculateUpperAbsolutePoints } from '../logic/calculator'
 
-export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap }) {
+export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap, onRemove }) {
   const absolutePoints = calculateUpperAbsolutePoints(playerScores)
 
   function getCellText(cIdx) {
@@ -16,31 +16,34 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
   }
 
   return (
-    <div style={{
-      width: 140,
-      flexShrink: 0,
-      display: 'flex',
-      flexDirection: 'column',
-      borderLeft: '1px solid rgba(255,255,255,0.1)',
-    }}>
+    <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
       <div style={{
-        height: 50,
-        flexShrink: 0,
-        background: '#673ab7',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontWeight: 'bold',
-        color: 'black',
-        fontSize: 14,
+        height: 50, flexShrink: 0, background: '#673ab7',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 'bold', color: 'black', fontSize: 14,
+        position: 'relative', padding: '0 24px 0 4px',
         overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-        padding: '0 4px',
       }}>
-        {name}
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {name}
+        </span>
+        {/* ✕ Button */}
+        <button
+          onClick={onRemove}
+          style={{
+            position: 'absolute', right: 4, top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'rgba(0,0,0,0.2)', border: 'none',
+            color: 'black', borderRadius: '50%',
+            width: 18, height: 18, fontSize: 10,
+            cursor: 'pointer', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            lineHeight: 1,
+          }}
+        >
+          ✕
+        </button>
       </div>
-
       {categories.map((cat, cIdx) => {
         const isUpperSum = cat === 'SUMME'
         const isTotalRow = cat === 'TOTAL'

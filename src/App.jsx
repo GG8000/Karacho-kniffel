@@ -59,7 +59,7 @@ function LoadingScreen({ onDone }) {
   const titleRef = useRef(null)
 
   useEffect(() => {
-    const duration = 9000
+    const duration = 5000
     const launchAt = 0.78
     let start = null
     let launched = false

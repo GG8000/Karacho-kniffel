@@ -1,20 +1,38 @@
 import { getPlayerStats, clearHistory } from '../storage'
-import { useState } from 'react'
+import { useAuth } from '../auth/AuthContext'
+import { useEffect, useState } from 'react'
 
 export default function Statistics({ onBack }) {
-  const stats = getPlayerStats()
-  const players = Object.values(stats)
+  const { isLoggedIn, profile, signOut } = useAuth()
+  const [stats, setStats] = useState(null)
   const [selected, setSelected] = useState(null)
   const [clearDialog, setClearDialog] = useState(false)
 
-  if (players.length === 0) return (
+  useEffect(() => {
+    let cancelled = false
+    getPlayerStats()
+      .then((s) => {
+        if (!cancelled) setStats(s)
+      })
+      .catch(() => {
+        if (!cancelled) setStats({})
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const shell = (children) => (
     <div style={{ position: 'fixed', inset: 0, background: '#1e1e1e', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
-      <div style={{ fontSize: 48 }}>📊</div>
-      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }}>Noch keine Spiele gespeichert.</div>
-      <button className="btn-outline" onClick={onBack}>← Zurück</button>
+      {children}
     </div>
   )
 
+  if (stats === null) return shell(
+    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }}>Lade Statistiken…</div>
+  )
+
+  const players = Object.values(stats)
   const selectedPlayer = selected ? stats[selected] : null
 
   return (
@@ -30,10 +48,44 @@ export default function Statistics({ onBack }) {
         {!selectedPlayer ? (
           // Spielerliste
           <>
+            {isLoggedIn ? (
+              <div style={{
+                background: 'rgba(103,58,183,0.12)',
+                border: '1px solid rgba(103,58,183,0.3)',
+                borderRadius: 10, padding: '10px 14px',
+              }}>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                  Angemeldet als <b style={{ color: 'white' }}>{profile?.display_name ?? '…'}</b> · ☁ = geräteübergreifend
+                </div>
+                {profile?.handle && (
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 6 }}>
+                    Dein Freund-Code:{' '}
+                    <b style={{ color: '#673ab7', fontSize: 14, letterSpacing: 1 }}>{profile.handle}</b>
+                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 2 }}>
+                      Gib ihn weiter — wer dich damit einträgt, lässt das Spiel auf deiner Statistik landen.
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+                Nicht angemeldet — Statistiken nur auf diesem Gerät.
+              </div>
+            )}
+
+            {players.length === 0 && (
+              <div style={{
+                color: 'rgba(255,255,255,0.4)', fontSize: 15,
+                textAlign: 'center', padding: '32px 0',
+              }}>
+                📊 Noch keine Spiele gespeichert.
+              </div>
+            )}
+
             {players.map(p => (
               <button
-                key={p.name}
-                onClick={() => setSelected(p.name)}
+                key={p.id}
+                onClick={() => setSelected(p.id)}
                 style={{
                   background: 'rgba(103,58,183,0.15)',
                   border: '1px solid rgba(103,58,183,0.4)',
@@ -44,7 +96,9 @@ export default function Statistics({ onBack }) {
                 }}
               >
                 <div>
-                  <div style={{ fontWeight: 'bold', fontSize: 16 }}>{p.name}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: 16 }}>
+                    {p.name} {p.isAccount && <span title="geräteübergreifend">☁</span>}
+                  </div>
                   <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 }}>
                     {p.gamesPlayed} Spiele · {p.wins} Siege
                   </div>
@@ -53,12 +107,23 @@ export default function Statistics({ onBack }) {
               </button>
             ))}
 
-            <button
-              onClick={() => setClearDialog(true)}
-              style={{ marginTop: 8, background: 'none', border: 'none', color: 'rgba(255,100,100,0.5)', fontSize: 13, cursor: 'pointer' }}
-            >
-              Historie löschen
-            </button>
+            {players.length > 0 && (
+              <button
+                onClick={() => setClearDialog(true)}
+                style={{ marginTop: 8, background: 'none', border: 'none', color: 'rgba(255,100,100,0.5)', fontSize: 13, cursor: 'pointer' }}
+              >
+                Lokalen Verlauf löschen
+              </button>
+            )}
+
+            {isLoggedIn && (
+              <button
+                onClick={() => signOut().then(onBack)}
+                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 13, cursor: 'pointer' }}
+              >
+                Abmelden
+              </button>
+            )}
           </>
         ) : (
           // Detailansicht
@@ -118,8 +183,10 @@ export default function Statistics({ onBack }) {
       {clearDialog && (
         <div className="dialog-overlay">
           <div className="dialog">
-            <div className="dialog-title">Historie löschen?</div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>Alle Statistiken werden gelöscht.</div>
+            <div className="dialog-title">Lokalen Verlauf löschen?</div>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+              Löscht nur den Zwischenspeicher auf diesem Gerät. Bereits synchronisierte Spiele bleiben in der Cloud.
+            </div>
             <div className="dialog-actions">
               <button className="btn-outline" onClick={() => setClearDialog(false)}>Abbrechen</button>
               <button className="btn-danger" onClick={() => { clearHistory(); setClearDialog(false); onBack() }}>Löschen</button>

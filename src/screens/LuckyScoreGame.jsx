@@ -1,6 +1,10 @@
 import { useState, useRef } from "react";
 import PlayerColumn from "../components/PlayerColumn";
 import ScoreInputModal from "../components/ScoreInputModal";
+import FriendCodeDialog from "../components/FriendCodeDialog";
+import PlayerLinkButtons from "../components/PlayerLinkButtons";
+import { useAuth } from "../auth/AuthContext";
+import { finalizeIdentities } from "../auth/identity";
 import { calculateUpperBalance, calculateTotal } from "../logic/calculator";
 import { saveGame } from "../storage";
 
@@ -32,8 +36,12 @@ function refreshTotals(playerScores) {
 }
 
 export default function LuckyScoreGame({ onExit }) {
+  const { profile } = useAuth();
   const [phase, setPhase] = useState("setup"); // setup | game | result
   const [players, setPlayers] = useState([]);
+  const [identities, setIdentities] = useState([]);
+  const [pending, setPending] = useState(null); // vorgemerkter Account
+  const [friendDialog, setFriendDialog] = useState(false);
   const [predictions, setPredictions] = useState({});
   const [scores, setScores] = useState({});
   const [modal, setModal] = useState(null);
@@ -49,11 +57,18 @@ export default function LuckyScoreGame({ onExit }) {
     if (!name || isNaN(pred)) return;
     const idx = players.length;
     setPlayers((prev) => [...prev, name]);
+    setIdentities((prev) => [...prev, pending?.id ?? null]);
     setPredictions((prev) => ({ ...prev, [idx]: pred }));
     setScores((prev) => ({ ...prev, [idx]: {} }));
     setNewName("");
     setNewPrediction("");
+    setPending(null);
     setTimeout(() => inputRef.current?.focus(), 50);
+  }
+
+  function prefill(p) {
+    setNewName(p.display_name);
+    setPending(p);
   }
 
   function updateScore(pIdx, cIdx, value, isKniffel = false) {
@@ -76,36 +91,35 @@ export default function LuckyScoreGame({ onExit }) {
     setModal(null);
   }
 
-  function finishGame() {
+  // Einziger Speicherpfad: Auswertung ist nur Vorschau, gespeichert wird beim "Weiter"
+  async function handleSaveAndExit() {
     const results = players.map((name, pIdx) => {
       const total = scores[pIdx]?.[14]?.value ?? 0;
-      const pred = predictions[pIdx];
-      const diff = Math.abs(total - pred);
-      return { name, total, pred, diff };
+      const diff = Math.abs(total - predictions[pIdx]);
+      return { total, diff };
     });
     const minDiff = Math.min(...results.map((r) => r.diff));
-    const winners = results
-      .filter((r) => r.diff === minDiff)
-      .map((r) => r.name);
 
     const kniffelCounts = players.map(
       (_, pIdx) =>
         Object.values(scores[pIdx] || {}).filter((e) => e.isKniffel).length,
     );
 
-    saveGame({
+    await saveGame({
       mode: "lucky",
       players,
-      scores,
-      winners,
+      identities: finalizeIdentities(players, identities, profile),
+      finalScores: results.map((r) => r.total),
+      // Gewinner ist hier, wer am nächsten am eigenen Tipp liegt
+      isWinners: results.map((r) => r.diff === minDiff),
       kniffelCounts,
-      predictions,
     });
-    setPhase("result");
+    onExit();
   }
 
   function handleRestart() {
     setPlayers([]);
+    setIdentities([]);
     setPredictions({});
     setScores({});
     setPhase("setup");
@@ -167,7 +181,17 @@ export default function LuckyScoreGame({ onExit }) {
               padding: "10px 14px",
             }}
           >
-            <span>{name}</span>
+            <span>
+              {name}{" "}
+              {identities[i] && (
+                <span
+                  title="Verknüpfter Account — bekommt das Spiel auf die eigene Statistik"
+                  style={{ color: "#673ab7" }}
+                >
+                  ☁
+                </span>
+              )}
+            </span>
             <span style={{ color: "#673ab7", fontWeight: "bold" }}>
               Tipp: {predictions[i]}
             </span>
@@ -179,7 +203,10 @@ export default function LuckyScoreGame({ onExit }) {
           className="dialog-input"
           placeholder="Name..."
           value={newName}
-          onChange={(e) => setNewName(e.target.value)}
+          onChange={(e) => {
+            setNewName(e.target.value);
+            setPending(null);
+          }}
         />
         <input
           className="dialog-input"
@@ -189,9 +216,27 @@ export default function LuckyScoreGame({ onExit }) {
           onChange={(e) => setNewPrediction(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addPlayer()}
         />
+
+        <PlayerLinkButtons
+          profile={profile}
+          identities={identities}
+          onPrefill={prefill}
+          onFriend={() => setFriendDialog(true)}
+        />
+
         <button className="btn-outline" onClick={addPlayer}>
-          Spieler hinzufügen
+          {pending
+            ? `„${pending.display_name}" hinzufügen ☁`
+            : "Spieler hinzufügen"}
         </button>
+
+        {friendDialog && (
+          <FriendCodeDialog
+            takenIds={identities.filter(Boolean)}
+            onClose={() => setFriendDialog(false)}
+            onResolve={prefill}
+          />
+        )}
 
         {players.length >= 2 && (
           <button
@@ -287,29 +332,7 @@ export default function LuckyScoreGame({ onExit }) {
             ✏️ Korrektur
           </button>
           {/* Speichern + beenden */}
-          <button
-            className="btn-primary"
-            onClick={() => {
-              const kniffelCounts = players.map(
-                (_, pIdx) =>
-                  Object.values(scores[pIdx] || {}).filter((e) => e.isKniffel)
-                    .length,
-              );
-              const minDiff = Math.min(...results.map((r) => r.diff));
-              const winners = results
-                .filter((r) => r.diff === minDiff)
-                .map((r) => r.name);
-              saveGame({
-                mode: "lucky",
-                players,
-                scores,
-                winners,
-                kniffelCounts,
-                predictions,
-              });
-              onExit();
-            }}
-          >
+          <button className="btn-primary" onClick={handleSaveAndExit}>
             Weiter →
           </button>
         </div>

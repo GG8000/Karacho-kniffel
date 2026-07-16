@@ -1,5 +1,9 @@
 import { useState } from "react";
 import ScoreInputModal from "../components/ScoreInputModal";
+import FriendCodeDialog from "../components/FriendCodeDialog";
+import PlayerLinkButtons from "../components/PlayerLinkButtons";
+import { useAuth } from "../auth/AuthContext";
+import { finalizeIdentities } from "../auth/identity";
 import { calculateUpperBalance, calculateTotal } from "../logic/calculator";
 import { saveGame } from "../storage";
 
@@ -125,9 +129,13 @@ function BlockColumn({
 }
 
 export default function KniffelExtrem({ onExit }) {
+  const { profile } = useAuth();
   const [phase, setPhase] = useState("setup");
   const [showResult, setShowResult] = useState(false); // ← NEU: trennt phase von Anzeige
   const [players, setPlayers] = useState([]);
+  const [identities, setIdentities] = useState([]);
+  const [pending, setPending] = useState(null); // vorgemerkter Account
+  const [friendDialog, setFriendDialog] = useState(false);
   const [newName, setNewName] = useState("");
   const [scores, setScores] = useState({});
   const [modal, setModal] = useState(null);
@@ -138,11 +146,18 @@ export default function KniffelExtrem({ onExit }) {
     if (!name) return;
     const idx = players.length;
     setPlayers((prev) => [...prev, name]);
+    setIdentities((prev) => [...prev, pending?.id ?? null]);
     setScores((prev) => ({
       ...prev,
       [idx]: { topDown: {}, bottomUp: {}, normal: {} },
     }));
     setNewName("");
+    setPending(null);
+  }
+
+  function prefill(p) {
+    setNewName(p.display_name);
+    setPending(p);
   }
 
   function updateScore(pIdx, block, cIdx, value, isKniffel = false) {
@@ -187,10 +202,9 @@ export default function KniffelExtrem({ onExit }) {
   }
 
   // Speichern + beenden
-  function handleSaveAndExit() {
+  async function handleSaveAndExit() {
     const totals = players.map((_, pIdx) => getTotal(pIdx));
     const max = Math.max(...totals);
-    const winners = players.filter((_, pIdx) => totals[pIdx] === max);
     const kniffelCounts = players.map((_, pIdx) => {
       const s = scores[pIdx];
       return ["topDown", "bottomUp", "normal"].reduce(
@@ -199,12 +213,20 @@ export default function KniffelExtrem({ onExit }) {
         0,
       );
     });
-    saveGame({ mode: "extrem", players, scores, winners, kniffelCounts });
+    await saveGame({
+      mode: "extrem",
+      players,
+      identities: finalizeIdentities(players, identities, profile),
+      finalScores: totals,
+      isWinners: totals.map((t) => t === max),
+      kniffelCounts,
+    });
     onExit();
   }
 
   function handleRestart() {
     setPlayers([]);
+    setIdentities([]);
     setScores({});
     setPhase("setup");
     setShowResult(false);
@@ -257,13 +279,23 @@ export default function KniffelExtrem({ onExit }) {
           <div
             key={i}
             style={{
+              display: "flex",
+              justifyContent: "space-between",
               color: "white",
               background: "rgba(103,58,183,0.15)",
               borderRadius: 10,
               padding: "10px 14px",
             }}
           >
-            {name}
+            <span>{name}</span>
+            {identities[i] && (
+              <span
+                title="Verknüpfter Account — bekommt das Spiel auf die eigene Statistik"
+                style={{ color: "#673ab7" }}
+              >
+                ☁
+              </span>
+            )}
           </div>
         ))}
 
@@ -271,13 +303,32 @@ export default function KniffelExtrem({ onExit }) {
           className="dialog-input"
           placeholder="Name..."
           value={newName}
-          onChange={(e) => setNewName(e.target.value)}
+          onChange={(e) => {
+            setNewName(e.target.value);
+            setPending(null);
+          }}
           onKeyDown={(e) => e.key === "Enter" && addPlayer()}
           autoFocus
         />
+
+        <PlayerLinkButtons
+          profile={profile}
+          identities={identities}
+          onPrefill={prefill}
+          onFriend={() => setFriendDialog(true)}
+        />
+
         <button className="btn-outline" onClick={addPlayer}>
-          Spieler hinzufügen
+          {pending ? `„${pending.display_name}" hinzufügen ☁` : "Spieler hinzufügen"}
         </button>
+
+        {friendDialog && (
+          <FriendCodeDialog
+            takenIds={identities.filter(Boolean)}
+            onClose={() => setFriendDialog(false)}
+            onResolve={prefill}
+          />
+        )}
 
         {players.length >= 1 && (
           <button

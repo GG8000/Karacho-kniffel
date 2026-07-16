@@ -5,8 +5,14 @@ import ModeSelect from "./screens/ModeSelect";
 import LuckyScoreGame from "./screens/LuckyScoreGame";
 import KniffelExtrem from "./screens/KniffelExtrem";
 import Statistics from "./screens/Statistics";
+import Login from "./screens/Login";
+import ProfileSetup, { NAME_CONFIRMED_KEY } from "./screens/ProfileSetup";
+import FriendCodeDialog from "./components/FriendCodeDialog";
+import PlayerLinkButtons from "./components/PlayerLinkButtons";
+import { useAuth } from "./auth/AuthContext";
+import { finalizeIdentities } from "./auth/identity";
 import { calculateUpperBalance, calculateTotal } from "./logic/calculator";
-import { saveGame } from "./storage";
+import { saveGame, syncPending, importLegacyHistory } from "./storage";
 import "./App.css";
 
 const PLAYABLE_INDICES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13];
@@ -196,9 +202,21 @@ function LoadingScreen({ onDone }) {
 }
 
 export default function App() {
+  const {
+    loading: authLoading,
+    isLoggedIn,
+    guest,
+    profile,
+  } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [nameConfirmed, setNameConfirmed] = useState(
+    () => localStorage.getItem(NAME_CONFIRMED_KEY) === "1",
+  );
   const [screen, setScreen] = useState("modeSelect");
   const [players, setPlayers] = useState([]);
+  const [identities, setIdentities] = useState([]);
+  const [pending, setPending] = useState(null); // vorgemerkter Account
+  const [friendDialog, setFriendDialog] = useState(false);
   const [scores, setScores] = useState({});
   const [modal, setModal] = useState(null);
   const [addDialog, setAddDialog] = useState(false);
@@ -213,6 +231,26 @@ export default function App() {
     const timer = setTimeout(() => setLoading(false), 10000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Alte lokale Historie einmalig übernehmen — erst nachdem der Spielername
+  // feststeht, sonst wird sie dem falschen Namen zugeordnet.
+  useEffect(() => {
+    if (!isLoggedIn || !profile || !nameConfirmed) return;
+    importLegacyHistory(profile).catch(() => {});
+  }, [isLoggedIn, profile, nameConfirmed]);
+
+  // Offene Spiele nachschieben, sobald wieder Netz/Fokus da ist
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const sync = () => syncPending().catch(() => {});
+    sync();
+    window.addEventListener("online", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, [isLoggedIn]);
 
   function updateScore(pIdx, cIdx, value, isKniffel = false) {
     setScores((prev) => {
@@ -248,14 +286,22 @@ export default function App() {
     if (!name) return;
     const idx = players.length;
     setPlayers((prev) => [...prev, name]);
+    setIdentities((prev) => [...prev, pending?.id ?? null]);
     setScores((prev) => ({ ...prev, [idx]: {} }));
     setNewName("");
+    setPending(null);
     setAddDialog(false);
+  }
+
+  function prefill(p) {
+    setNewName(p.display_name);
+    setPending(p);
   }
 
   // NEU: Spieler entfernen — reindiziert alle Scores danach
   function handleRemovePlayer(removeIdx) {
     setPlayers((prev) => prev.filter((_, i) => i !== removeIdx));
+    setIdentities((prev) => prev.filter((_, i) => i !== removeIdx));
     setScores((prev) => {
       const newScores = {};
       let newIdx = 0;
@@ -272,35 +318,40 @@ export default function App() {
 
   function openAddDialog() {
     setNewName("");
+    setPending(null);
     setAddDialog(true);
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
-  // Speichern + zurück zum Menü
-  function handleSaveAndExit() {
+  function buildGamePayload() {
     const kniffelCounts = players.map(
       (_, pIdx) =>
         Object.values(scores[pIdx] || {}).filter((e) => e.isKniffel).length,
     );
     const totals = players.map((_, pIdx) => scores[pIdx]?.[14]?.value ?? 0);
     const maxTotal = Math.max(...totals);
-    const winners = players.filter((_, pIdx) => totals[pIdx] === maxTotal);
-    saveGame({ mode: "normal", players, scores, winners, kniffelCounts });
+    return {
+      mode: "normal",
+      players,
+      identities: finalizeIdentities(players, identities, profile),
+      finalScores: totals,
+      isWinners: totals.map((t) => t === maxTotal),
+      kniffelCounts,
+    };
+  }
+
+  // Speichern + zurück zum Menü
+  async function handleSaveAndExit() {
+    await saveGame(buildGamePayload());
     goToModeSelect();
   }
 
-  function handleRestart() {
-    const kniffelCounts = players.map(
-      (_, pIdx) =>
-        Object.values(scores[pIdx] || {}).filter((e) => e.isKniffel).length,
-    );
-    const totals = players.map((_, pIdx) => scores[pIdx]?.[14]?.value ?? 0);
-    const maxTotal = Math.max(...totals);
-    const winners = players.filter((_, pIdx) => totals[pIdx] === maxTotal);
+  async function handleRestart() {
     if (players.length > 0) {
-      saveGame({ mode: "normal", players, scores, winners, kniffelCounts });
+      await saveGame(buildGamePayload());
     }
     setPlayers([]);
+    setIdentities([]);
     setScores({});
     setRestartDialog(false);
     setGameComplete(false);
@@ -310,12 +361,18 @@ export default function App() {
   function goToModeSelect() {
     setScreen("modeSelect");
     setPlayers([]);
+    setIdentities([]);
     setScores({});
     setGameComplete(false);
     setShowResult(false);
   }
 
   if (loading) return <LoadingScreen onDone={() => setLoading(false)} />;
+  if (authLoading)
+    return <div style={{ position: "fixed", inset: 0, background: "#1e1e1e" }} />;
+  if (!isLoggedIn && !guest) return <Login />;
+  if (isLoggedIn && profile && !nameConfirmed)
+    return <ProfileSetup onDone={() => setNameConfirmed(true)} />;
   if (screen === "modeSelect") return <ModeSelect onSelect={setScreen} />;
   if (screen === "lucky") return <LuckyScoreGame onExit={goToModeSelect} />;
   if (screen === "extrem") return <KniffelExtrem onExit={goToModeSelect} />;
@@ -493,9 +550,18 @@ export default function App() {
               className="dialog-input"
               placeholder="Name eingeben..."
               value={newName}
-              onChange={(e) => setNewName(e.target.value)}
+              onChange={(e) => {
+                setNewName(e.target.value);
+                setPending(null);
+              }}
               onKeyDown={(e) => e.key === "Enter" && handleAddPlayer()}
               autoFocus
+            />
+            <PlayerLinkButtons
+              profile={profile}
+              identities={identities}
+              onPrefill={prefill}
+              onFriend={() => setFriendDialog(true)}
             />
             <div className="dialog-actions">
               <button
@@ -505,11 +571,19 @@ export default function App() {
                 Abbrechen
               </button>
               <button className="btn-primary" onClick={handleAddPlayer}>
-                Hinzufügen
+                {pending ? `„${pending.display_name}" ☁` : "Hinzufügen"}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {friendDialog && (
+        <FriendCodeDialog
+          takenIds={identities.filter(Boolean)}
+          onClose={() => setFriendDialog(false)}
+          onResolve={prefill}
+        />
       )}
 
       {/* NEU: Spieler entfernen Dialog */}

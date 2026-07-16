@@ -66,7 +66,8 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
             onClick={isSumRow ? undefined : () => onTap(pIdx, cIdx)}
             style={{
               flex: 1,
-              minHeight: 0,
+              minHeight: 40,
+              height: 40,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

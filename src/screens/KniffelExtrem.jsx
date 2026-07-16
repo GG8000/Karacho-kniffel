@@ -399,9 +399,31 @@ export default function KniffelExtrem({ onExit }) {
 
       <div className="game-area">
         <div className="categories-column">
-          <div className="cat-header">KAT</div>
+          {/* zwei Kopfzeilen (36+36) — passend zu Spielername + Block-Label (↓ ↑ ~) */}
+          <div
+            style={{
+              height: 36,
+              flexShrink: 0,
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderBottom: "none",
+            }}
+          />
+          <div
+            style={{
+              height: 36,
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "grey",
+              fontSize: 13,
+            }}
+          >
+            KAT
+          </div>
           {CATS_NORMAL.map((cat, i) => (
-            <div key={i} className="cat-cell">
+            <div key={i} className="cat-cell" style={{ flex: "none" }}>
               {cat}
             </div>
           ))}

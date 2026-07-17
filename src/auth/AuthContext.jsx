@@ -111,6 +111,12 @@ export function AuthProvider({ children }) {
     setGuest(true)
   }
 
+  // Zurück zum Login-Screen: ohne das wäre der Gast-Modus eine Sackgasse.
+  function exitGuest() {
+    localStorage.removeItem(GUEST_KEY)
+    setGuest(false)
+  }
+
   const value = useMemo(
     () => ({
       session,
@@ -123,6 +129,7 @@ export function AuthProvider({ children }) {
       signOut,
       updateDisplayName,
       continueAsGuest,
+      exitGuest,
     }),
     [session, profile, loading, guest],
   )

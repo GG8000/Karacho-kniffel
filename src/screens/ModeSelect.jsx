@@ -1,4 +1,8 @@
+import { useAuth } from '../auth/AuthContext'
+
 export default function ModeSelect({ onSelect }) {
+  const { isLoggedIn, profile, exitGuest } = useAuth()
+
   const modes = [
     {
       id: 'normal',
@@ -84,6 +88,27 @@ export default function ModeSelect({ onSelect }) {
       >
         📊 STATISTIKEN
       </button>
+
+      {isLoggedIn ? (
+        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>
+          Angemeldet als {profile?.display_name ?? '…'}
+        </div>
+      ) : (
+        <button
+          onClick={exitGuest}
+          style={{
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.25)',
+            borderRadius: 8,
+            padding: '8px 16px',
+            color: 'rgba(255,255,255,0.6)',
+            fontSize: 13,
+            cursor: 'pointer',
+          }}
+        >
+          🔐 Anmelden
+        </button>
+      )}
     </div>
   )
 }

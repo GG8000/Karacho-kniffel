@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useEffect, useState } from 'react'
 
 export default function Statistics({ onBack }) {
-  const { isLoggedIn, profile, signOut } = useAuth()
+  const { isLoggedIn } = useAuth()
   const [stats, setStats] = useState(null)
   const [selected, setSelected] = useState(null)
   const [clearDialog, setClearDialog] = useState(false)
@@ -48,30 +48,11 @@ export default function Statistics({ onBack }) {
         {!selectedPlayer ? (
           // Spielerliste
           <>
-            {isLoggedIn ? (
-              <div style={{
-                background: 'rgba(103,58,183,0.12)',
-                border: '1px solid rgba(103,58,183,0.3)',
-                borderRadius: 10, padding: '10px 14px',
-              }}>
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-                  Angemeldet als <b style={{ color: 'white' }}>{profile?.display_name ?? '…'}</b> · ☁ = geräteübergreifend
-                </div>
-                {profile?.handle && (
-                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 6 }}>
-                    Dein Freund-Code:{' '}
-                    <b style={{ color: '#673ab7', fontSize: 14, letterSpacing: 1 }}>{profile.handle}</b>
-                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 2 }}>
-                      Gib ihn weiter — wer dich damit einträgt, lässt das Spiel auf deiner Statistik landen.
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
-                Nicht angemeldet — Statistiken nur auf diesem Gerät.
-              </div>
-            )}
+            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+              {isLoggedIn
+                ? '☁ = geräteübergreifend · Freund-Code unter 👤 Konto'
+                : 'Nicht angemeldet — Statistiken nur auf diesem Gerät.'}
+            </div>
 
             {players.length === 0 && (
               <div style={{
@@ -113,15 +94,6 @@ export default function Statistics({ onBack }) {
                 style={{ marginTop: 8, background: 'none', border: 'none', color: 'rgba(255,100,100,0.5)', fontSize: 13, cursor: 'pointer' }}
               >
                 Lokalen Verlauf löschen
-              </button>
-            )}
-
-            {isLoggedIn && (
-              <button
-                onClick={() => signOut().then(onBack)}
-                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 13, cursor: 'pointer' }}
-              >
-                Abmelden
               </button>
             )}
           </>

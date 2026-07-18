@@ -1,15 +1,18 @@
 import { useState } from 'react'
-import { findProfileByHandle } from '../auth/friends'
+import { findProfileByHandle, addFriend } from '../auth/friends'
+import { parseScannedHandle } from '../lib/handle'
+import QrScanner from './QrScanner'
 
-// Sucht einen Mitspieler per Freund-Code und gibt sein Profil zurück.
-// Wird von allen drei Spielmodi genutzt.
+// Sucht einen Mitspieler per Freund-Code (getippt oder per QR gescannt) und
+// gibt sein Profil zurück. Wird von allen drei Spielmodi genutzt.
 export default function FriendCodeDialog({ onClose, onResolve, takenIds = [] }) {
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [scanning, setScanning] = useState(false)
 
-  async function handleFind() {
-    const value = code.trim()
+  async function resolve(rawHandle) {
+    const value = rawHandle.trim()
     if (!value) return
     setBusy(true)
     setError(null)
@@ -25,12 +28,25 @@ export default function FriendCodeDialog({ onClose, onResolve, takenIds = [] }) 
         setBusy(false)
         return
       }
+      // Freund merken, damit man ihn beim nächsten Mal ohne Scannen wählen kann
+      addFriend(profile.id).catch(() => {})
       onResolve(profile)
       onClose()
     } catch (e) {
       setError(e.message ?? 'Suche fehlgeschlagen.')
       setBusy(false)
     }
+  }
+
+  function handleScan(text) {
+    setScanning(false)
+    const handle = parseScannedHandle(text)
+    setCode(handle)
+    resolve(handle)
+  }
+
+  if (scanning) {
+    return <QrScanner onScan={handleScan} onClose={() => setScanning(false)} />
   }
 
   return (
@@ -41,26 +57,41 @@ export default function FriendCodeDialog({ onClose, onResolve, takenIds = [] }) 
       <div className="dialog">
         <div className="dialog-title">Freund per Code</div>
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
-          Den Code findet dein Freund in der App unter 📊 Statistiken.
+          Scanne den QR-Code deines Freundes oder tippe den Code (aus 👤 Konto).
           Verknüpfte Spieler bekommen das Spiel auf ihre eigene Statistik — auf
           ihrem eigenen Handy.
         </div>
+
+        <button
+          className="btn-outline"
+          style={{ minHeight: 44 }}
+          onClick={() => {
+            setError(null)
+            setScanning(true)
+          }}
+        >
+          📷 QR-Code scannen
+        </button>
+
         <input
           className="dialog-input"
-          placeholder="z.B. anna-4f2a"
+          placeholder="oder Code tippen: z.B. anna-4f2a"
           autoCapitalize="none"
           autoCorrect="off"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleFind()}
-          autoFocus
+          onKeyDown={(e) => e.key === 'Enter' && resolve(code)}
         />
         {error && <div style={{ color: '#ff5252', fontSize: 13 }}>{error}</div>}
         <div className="dialog-actions">
           <button className="btn-outline" onClick={onClose}>
             Abbrechen
           </button>
-          <button className="btn-primary" onClick={handleFind} disabled={busy}>
+          <button
+            className="btn-primary"
+            onClick={() => resolve(code)}
+            disabled={busy}
+          >
             {busy ? 'Suche…' : 'Übernehmen'}
           </button>
         </div>

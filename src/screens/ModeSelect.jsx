@@ -1,7 +1,7 @@
 import { useAuth } from '../auth/AuthContext'
 
 export default function ModeSelect({ onSelect }) {
-  const { isLoggedIn, profile, exitGuest } = useAuth()
+  const { isLoggedIn, profile } = useAuth()
 
   const modes = [
     {
@@ -74,40 +74,39 @@ export default function ModeSelect({ onSelect }) {
         </button>
       ))}
 
-      <button
-        onClick={() => onSelect('stats')}
-        style={{
-          marginTop: 8,
-          background: 'transparent',
-          border: 'none',
-          color: 'rgba(255,255,255,0.4)',
-          fontSize: 14,
-          cursor: 'pointer',
-          letterSpacing: 2,
-        }}
-      >
-        📊 STATISTIKEN
-      </button>
+      <div style={{ display: 'flex', gap: 20, marginTop: 8 }}>
+        <button
+          onClick={() => onSelect('stats')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: 14,
+            cursor: 'pointer',
+            letterSpacing: 2,
+          }}
+        >
+          📊 STATISTIKEN
+        </button>
+        <button
+          onClick={() => onSelect('profile')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: 14,
+            cursor: 'pointer',
+            letterSpacing: 2,
+          }}
+        >
+          {isLoggedIn ? '👤 KONTO' : '🔐 EINLOGGEN'}
+        </button>
+      </div>
 
-      {isLoggedIn ? (
+      {isLoggedIn && (
         <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>
           Angemeldet als {profile?.display_name ?? '…'}
         </div>
-      ) : (
-        <button
-          onClick={exitGuest}
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.25)',
-            borderRadius: 8,
-            padding: '8px 16px',
-            color: 'rgba(255,255,255,0.6)',
-            fontSize: 13,
-            cursor: 'pointer',
-          }}
-        >
-          🔐 Anmelden
-        </button>
       )}
     </div>
   )

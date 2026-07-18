@@ -6,6 +6,7 @@ import LuckyScoreGame from "./screens/LuckyScoreGame";
 import KniffelExtrem from "./screens/KniffelExtrem";
 import Statistics from "./screens/Statistics";
 import Login from "./screens/Login";
+import Profile from "./screens/Profile";
 import ProfileSetup, { NAME_CONFIRMED_KEY } from "./screens/ProfileSetup";
 import FriendCodeDialog from "./components/FriendCodeDialog";
 import PlayerLinkButtons from "./components/PlayerLinkButtons";
@@ -377,6 +378,7 @@ export default function App() {
   if (screen === "lucky") return <LuckyScoreGame onExit={goToModeSelect} />;
   if (screen === "extrem") return <KniffelExtrem onExit={goToModeSelect} />;
   if (screen === "stats") return <Statistics onBack={goToModeSelect} />;
+  if (screen === "profile") return <Profile onBack={goToModeSelect} />;
 
   // Auswertungs-Screen
   if (showResult) {

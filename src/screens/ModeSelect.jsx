@@ -74,6 +74,32 @@ export default function ModeSelect({ onSelect }) {
         </button>
       ))}
 
+      {/* Online-Modus — braucht Anmeldung */}
+      <button
+        onClick={() => onSelect(isLoggedIn ? 'online' : 'profile')}
+        style={{
+          width: '100%',
+          maxWidth: 340,
+          background: 'rgba(103,58,183,0.15)',
+          border: '2px solid #673ab7',
+          borderRadius: 14,
+          padding: '18px 20px',
+          color: 'white',
+          cursor: 'pointer',
+          textAlign: 'left',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+        }}
+      >
+        <div style={{ fontSize: 18, fontWeight: 'bold' }}>🌐 ONLINE</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
+          {isLoggedIn
+            ? 'Gegeneinander spielen, auch aus der Ferne — Tabelle live'
+            : 'Zum Online-Spielen anmelden'}
+        </div>
+      </button>
+
       <div style={{ display: 'flex', gap: 20, marginTop: 8 }}>
         <button
           onClick={() => onSelect('stats')}

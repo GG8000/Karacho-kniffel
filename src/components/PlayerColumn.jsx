@@ -1,6 +1,6 @@
 import { calculateUpperAbsolutePoints } from '../logic/calculator'
 
-export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap, onRemove }) {
+export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap, onRemove, canEdit = true }) {
   const absolutePoints = calculateUpperAbsolutePoints(playerScores)
 
   function getCellText(cIdx) {
@@ -27,22 +27,24 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {name}
         </span>
-        {/* ✕ Button */}
-        <button
-          onClick={onRemove}
-          style={{
-            position: 'absolute', right: 4, top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'rgba(0,0,0,0.2)', border: 'none',
-            color: 'black', borderRadius: '50%',
-            width: 18, height: 18, fontSize: 10,
-            cursor: 'pointer', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            lineHeight: 1,
-          }}
-        >
-          ✕
-        </button>
+        {/* ✕ Button — nur wenn entfernbar (nicht im Online-Modus) */}
+        {onRemove && (
+          <button
+            onClick={onRemove}
+            style={{
+              position: 'absolute', right: 4, top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'rgba(0,0,0,0.2)', border: 'none',
+              color: 'black', borderRadius: '50%',
+              width: 18, height: 18, fontSize: 10,
+              cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              lineHeight: 1,
+            }}
+          >
+            ✕
+          </button>
+        )}
       </div>
       {categories.map((cat, cIdx) => {
         const isUpperSum = cat === 'SUMME'
@@ -63,7 +65,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
         return (
           <div
             key={cIdx}
-            onClick={isSumRow ? undefined : () => onTap(pIdx, cIdx)}
+            onClick={isSumRow || !canEdit ? undefined : () => onTap(pIdx, cIdx)}
             style={{
               flex: 1,
               minHeight: 40,
@@ -80,7 +82,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               borderRight: '1px solid rgba(255,255,255,0.1)',
               backgroundColor: isSumRow ? 'rgba(255,255,255,0.07)' : 'transparent',
               color,
-              cursor: isSumRow ? 'default' : 'pointer',
+              cursor: isSumRow || !canEdit ? 'default' : 'pointer',
               userSelect: 'none',
               WebkitTapHighlightColor: 'transparent',
               position: 'relative',

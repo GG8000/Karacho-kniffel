@@ -35,6 +35,15 @@ async function currentUserId() {
   return data?.user?.id ?? null
 }
 
+// Wie currentUserId(), aber rein LOKAL (liest die gespeicherte Session, kein
+// Netz). Für den Schreibpfad, der offline nie hängen darf. createdBy ist nur
+// ein Hinweis — pushGame/syncPending bestimmen die User-ID sowieso neu.
+async function localUserId() {
+  if (!isSupabaseConfigured) return null
+  const { data } = await supabase.auth.getSession()
+  return data?.session?.user?.id ?? null
+}
+
 // --- Schreiben -------------------------------------------------------------
 
 // Schreibt sofort lokal (offline-fest) und schiebt danach best-effort in die Cloud.
@@ -45,8 +54,9 @@ export async function saveGame({
   finalScores = [],
   kniffelCounts = [],
   isWinners = [],
+  cells = [], // pro Spieler das Kategorie-Raster; nur der Normal-Modus liefert es
 }) {
-  const uid = await currentUserId()
+  const uid = await localUserId()
 
   const participants = players.map((name, i) => {
     const profileId = identities[i] ?? null
@@ -57,6 +67,7 @@ export async function saveGame({
       finalScore: finalScores[i] ?? 0,
       isWinner: Boolean(isWinners[i]),
       kniffelCount: kniffelCounts[i] ?? 0,
+      cells: cells[i] ?? null,
     }
   })
 
@@ -69,14 +80,30 @@ export async function saveGame({
     participants,
   }
 
+  // Sofort lokal sichern — ab hier ist das Spiel offline-fest gespeichert.
   writeCache([...readCache(), game])
+  emitSaved()
 
-  try {
-    await pushGame(game)
-  } catch {
-    // bleibt in der Queue, syncPending() versucht es später erneut
-  }
+  // Cloud-Push best-effort im HINTERGRUND: bewusst NICHT awaited, damit die UI
+  // nie am Netz hängt. Klappt es nicht (offline/RLS), bleibt das Spiel in der
+  // Queue und syncPending() schiebt es später nach.
+  pushGame(game).catch(() => {})
   return game
+}
+
+// --- Save-Event (für den Toaster) ------------------------------------------
+
+const saveListeners = new Set()
+
+// Meldet sich für "ein Spiel wurde lokal gespeichert" an. Gibt eine
+// Abmelde-Funktion zurück.
+export function onSaveEvent(cb) {
+  saveListeners.add(cb)
+  return () => saveListeners.delete(cb)
+}
+
+function emitSaved() {
+  for (const cb of saveListeners) cb()
 }
 
 async function pushGame(game) {
@@ -114,6 +141,7 @@ async function pushGame(game) {
     final_score: p.finalScore,
     is_winner: p.isWinner,
     kniffel_count: p.kniffelCount,
+    cells: p.cells ?? null,
   }))
   const { error: playersError } = await supabase
     .from('game_players')
@@ -148,7 +176,7 @@ async function fetchCloudGames() {
   const { data, error } = await supabase
     .from('game_players')
     .select(
-      'game_id, profile_id, guest_name, final_score, is_winner, kniffel_count, games(mode, played_at), profiles(display_name)',
+      'game_id, profile_id, guest_name, final_score, is_winner, kniffel_count, cells, games(mode, played_at), profiles(display_name)',
     )
   if (error) throw error
 
@@ -168,6 +196,7 @@ async function fetchCloudGames() {
       finalScore: r.final_score,
       isWinner: r.is_winner,
       kniffelCount: r.kniffel_count,
+      cells: r.cells ?? null,
     })
   }
   return [...byGame.values()]

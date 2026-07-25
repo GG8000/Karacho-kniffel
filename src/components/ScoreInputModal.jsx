@@ -2,17 +2,20 @@ import { useState, useEffect } from 'react'
 
 const FIX_POINTS = { 'FH': 25, 'KL STR': 30, 'GR STR': 40, 'KNFFL': 50 }
 
-export default function ScoreInputModal({ pIdx, cIdx, categories, onClose, onSave, onDelete }) {
+export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, onClose, onSave, onDelete }) {
   const catName = categories[cIdx]
   const isSlider = ['3er', '4er', 'CHNC'].includes(catName)
   const isFixed = catName in FIX_POINTS
   const isUpperDice = cIdx < 6
 
-  const [sliderVal, setSliderVal] = useState(15)
+  // Startwert des Sliders: typischer Wert dieses Spielers (falls vorhanden),
+  // sonst wie bisher 15.
+  const start = defaultValue ?? 15
+  const [sliderVal, setSliderVal] = useState(start)
 
   useEffect(() => {
-    setSliderVal(15)
-  }, [cIdx])
+    setSliderVal(start)
+  }, [cIdx, start])
 
 
   const diceButtons = Array.from({ length: 6 }, (_, index) => {
@@ -53,6 +56,11 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, onClose, onSav
               onChange={e => setSliderVal(Number(e.target.value))}
               style={{ width: '100%', accentColor: '#673ab7', height: 4 }}
             />
+            {defaultValue != null && (
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                ≈ dein typischer Wert
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button className="btn-delete" onClick={onDelete}>
                 🗑 Löschen

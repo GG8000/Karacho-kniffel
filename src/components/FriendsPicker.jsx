@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { listFriends } from '../auth/friends'
+import Spinner from './Spinner'
 
 // Wählt einen Freund aus der gespeicherten Liste — ohne erneutes Scannen.
 export default function FriendsPicker({ onPick, onClose, takenIds = [] }) {
@@ -34,8 +35,8 @@ export default function FriendsPicker({ onPick, onClose, takenIds = [] }) {
         <div className="dialog-title">Freund auswählen</div>
 
         {friends === null ? (
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
-            Lade…
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+            <Spinner row label="Lade Freunde…" size={16} />
           </div>
         ) : available.length === 0 ? (
           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>

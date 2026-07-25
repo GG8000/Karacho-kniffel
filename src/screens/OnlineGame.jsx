@@ -11,6 +11,7 @@ import {
   setStatus,
 } from '../lib/liveGame'
 import { saveGame } from '../storage'
+import Spinner from '../components/Spinner'
 
 export default function OnlineGame({ gameId, onExit }) {
   const { profile } = useAuth()
@@ -21,6 +22,7 @@ export default function OnlineGame({ gameId, onExit }) {
   const [modal, setModal] = useState(null)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const load = useCallback(() => {
     fetchGame(gameId)
@@ -58,12 +60,15 @@ export default function OnlineGame({ gameId, onExit }) {
   )
 
   async function handleSave(val, isKniffel) {
+    setSubmitting(true)
+    setModal(null)
     try {
       await playTurn(gameId, modal.cIdx, val, isKniffel)
-      setModal(null)
       load()
     } catch (e) {
       setError(e.message ?? 'Zug nicht möglich.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -109,7 +114,11 @@ export default function OnlineGame({ gameId, onExit }) {
           color: 'rgba(255,255,255,0.4)',
         }}
       >
-        {error ?? 'Lade Spiel…'}
+        {error ? (
+          <span style={{ color: '#ff5252', fontSize: 13 }}>{error}</span>
+        ) : (
+          <Spinner label="Lade Spiel…" />
+        )}
       </div>
     )
   }
@@ -221,9 +230,13 @@ export default function OnlineGame({ gameId, onExit }) {
             color: isMyTurn ? '#69ff47' : '#b39ddb',
           }}
         >
-          {isMyTurn
-            ? '▶ Du bist dran — wähle eine Kategorie'
-            : `⏳ ${currentPlayer.name} ist dran…`}
+          {submitting ? (
+            <Spinner row label="Zug wird übertragen…" size={14} />
+          ) : isMyTurn ? (
+            '▶ Du bist dran — wähle eine Kategorie'
+          ) : (
+            `⏳ ${currentPlayer.name} ist dran…`
+          )}
         </div>
       )}
 
@@ -270,7 +283,7 @@ export default function OnlineGame({ gameId, onExit }) {
             disabled={saving}
             style={{ opacity: complete ? 1 : 0.6 }}
           >
-            {saving ? 'Speichere…' : 'AUSWERTEN →'}
+            {saving ? <Spinner row label="Speichere…" size={16} /> : 'AUSWERTEN →'}
           </button>
         )}
       </div>

@@ -238,3 +238,39 @@ html, body, #root {
   60%  { transform: rotate(20deg) scale(1.1); opacity: 1; }
   100% { transform: rotate(0deg) scale(1); }
 }
+
+/* Rotierender Ladespinner (siehe components/Spinner.jsx) */
+@keyframes rotate360 {
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  display: inline-block;
+  box-sizing: border-box;
+  border: 2.5px solid rgba(103, 58, 183, 0.25);
+  border-top-color: #673ab7;
+  border-radius: 50%;
+  animation: rotate360 0.8s linear infinite;
+}
+
+/* Toast nach dem Speichern (siehe components/Toaster.jsx) */
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: rgba(30, 30, 30, 0.96);
+  border: 1px solid rgba(103, 58, 183, 0.5);
+  color: #fff;
+  font-size: 13px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  z-index: 10000;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  animation: toastIn 0.25s ease-out;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}

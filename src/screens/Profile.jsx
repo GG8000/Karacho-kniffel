@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 import { listFriends, removeFriend } from '../auth/friends'
 import FriendCodeDialog from '../components/FriendCodeDialog'
+import Spinner from '../components/Spinner'
 
 export default function Profile({ onBack }) {
   const {
@@ -21,12 +22,14 @@ export default function Profile({ onBack }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [friends, setFriends] = useState([])
+  const [loadingFriends, setLoadingFriends] = useState(true)
   const [addFriendOpen, setAddFriendOpen] = useState(false)
 
   function refreshFriends() {
     listFriends()
       .then(setFriends)
       .catch(() => setFriends([]))
+      .finally(() => setLoadingFriends(false))
   }
 
   // Freunde laden + live aktualisieren: Wenn jemand dich scannt, entsteht eine
@@ -173,7 +176,11 @@ export default function Profile({ onBack }) {
               onClick={handleGoogle}
               disabled={busy}
             >
-              {busy ? 'Weiterleitung…' : 'Mit Google anmelden'}
+              {busy ? (
+                <Spinner row label="Weiterleitung…" size={16} />
+              ) : (
+                'Mit Google anmelden'
+              )}
             </button>
           </>
         ) : (
@@ -203,7 +210,13 @@ export default function Profile({ onBack }) {
                   onClick={handleSaveName}
                   disabled={savingName}
                 >
-                  {savedHint ? '✓' : 'Speichern'}
+                  {savingName ? (
+                    <Spinner row size={16} />
+                  ) : savedHint ? (
+                    '✓'
+                  ) : (
+                    'Speichern'
+                  )}
                 </button>
               </div>
               <div
@@ -300,7 +313,11 @@ export default function Profile({ onBack }) {
                 </button>
               </div>
 
-              {friends.length === 0 ? (
+              {loadingFriends ? (
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                  <Spinner row label="Lade Freunde…" size={16} />
+                </div>
+              ) : friends.length === 0 ? (
                 <div
                   style={{
                     color: 'rgba(255,255,255,0.3)',

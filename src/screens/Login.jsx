@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import Spinner from '../components/Spinner'
 
 function GoogleLogo() {
   return (
@@ -113,7 +114,11 @@ export default function Login() {
           }}
         >
           <GoogleLogo />
-          {busy ? 'Weiterleitung…' : 'Mit Google anmelden'}
+          {busy ? (
+            <Spinner row label="Weiterleitung…" size={16} />
+          ) : (
+            'Mit Google anmelden'
+          )}
         </button>
       )}
 

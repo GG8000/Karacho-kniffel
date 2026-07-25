@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { findProfileByHandle, addFriend } from '../auth/friends'
 import { parseScannedHandle } from '../lib/handle'
 import QrScanner from './QrScanner'
+import Spinner from './Spinner'
 
 // Sucht einen Mitspieler per Freund-Code (getippt oder per QR gescannt) und
 // gibt sein Profil zurück. Wird von allen drei Spielmodi genutzt.
@@ -92,7 +93,7 @@ export default function FriendCodeDialog({ onClose, onResolve, takenIds = [] }) 
             onClick={() => resolve(code)}
             disabled={busy}
           >
-            {busy ? 'Suche…' : 'Übernehmen'}
+            {busy ? <Spinner row label="Suche Spieler…" size={16} /> : 'Übernehmen'}
           </button>
         </div>
       </div>

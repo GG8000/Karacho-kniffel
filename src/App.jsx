@@ -14,7 +14,10 @@ import PlayerLinkButtons from "./components/PlayerLinkButtons";
 import { useAuth } from "./auth/AuthContext";
 import { finalizeIdentities } from "./auth/identity";
 import { calculateUpperBalance, calculateTotal } from "./logic/calculator";
-import { saveGame, syncPending, importLegacyHistory } from "./storage";
+import { saveGame, syncPending, importLegacyHistory, getHistory } from "./storage";
+import { computeTypicalValues } from "./logic/categoryStats";
+import { keyOf } from "./logic/stats";
+import Spinner from "./components/Spinner";
 import "./App.css";
 
 const PLAYABLE_INDICES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13];
@@ -227,7 +230,18 @@ export default function App() {
   const [newName, setNewName] = useState("");
   const [gameComplete, setGameComplete] = useState(false); // NEU: ersetzt resultScreen
   const [showResult, setShowResult] = useState(false); // NEU: trennt "fertig" von "Auswertung sichtbar"
+  const [typical, setTypical] = useState({}); // typische Slider-Werte je Spieler
   const inputRef = useRef(null);
+
+  // Typische Werte aus der Historie laden — Grundlage der smarten Slider-Defaults.
+  function refreshTypical() {
+    getHistory()
+      .then((h) => setTypical(computeTypicalValues(h)))
+      .catch(() => {});
+  }
+  useEffect(() => {
+    refreshTypical();
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 10000);
@@ -332,6 +346,16 @@ export default function App() {
     );
     const totals = players.map((_, pIdx) => scores[pIdx]?.[14]?.value ?? 0);
     const maxTotal = Math.max(...totals);
+    // Das eingetragene Kategorie-Raster pro Spieler mitspeichern (für die
+    // Kategorie-Statistik). Nur die gespielten Felder, ohne abgeleitete Summen.
+    const cells = players.map((_, pIdx) => {
+      const raw = scores[pIdx] || {};
+      const out = {};
+      for (const ci of PLAYABLE_INDICES) {
+        if (raw[ci]) out[ci] = { value: raw[ci].value, isKniffel: !!raw[ci].isKniffel };
+      }
+      return out;
+    });
     return {
       mode: "normal",
       players,
@@ -339,18 +363,29 @@ export default function App() {
       finalScores: totals,
       isWinners: totals.map((t) => t === maxTotal),
       kniffelCounts,
+      cells,
     };
+  }
+
+  // Smarter Default für den Slider: typischer Wert dieses Spielers in dieser
+  // Kategorie (Fallback global, dann greift im Modal die 15).
+  function modalDefaultValue(pIdx, cIdx) {
+    const id = finalizeIdentities(players, identities, profile)[pIdx];
+    const key = keyOf({ profileId: id, name: players[pIdx] ?? "" });
+    return typical[key]?.[cIdx] ?? typical.__global?.[cIdx];
   }
 
   // Speichern + zurück zum Menü
   async function handleSaveAndExit() {
     await saveGame(buildGamePayload());
+    refreshTypical();
     goToModeSelect();
   }
 
   async function handleRestart() {
     if (players.length > 0) {
       await saveGame(buildGamePayload());
+      refreshTypical();
     }
     setPlayers([]);
     setIdentities([]);
@@ -371,7 +406,20 @@ export default function App() {
 
   if (loading) return <LoadingScreen onDone={() => setLoading(false)} />;
   if (authLoading)
-    return <div style={{ position: "fixed", inset: 0, background: "#1e1e1e" }} />;
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "#1e1e1e",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Spinner label="Lade…" />
+      </div>
+    );
   if (!isLoggedIn && !guest) return <Login />;
   if (isLoggedIn && profile && !nameConfirmed)
     return <ProfileSetup onDone={() => setNameConfirmed(true)} />;
@@ -534,6 +582,7 @@ export default function App() {
           pIdx={modal.pIdx}
           cIdx={modal.cIdx}
           categories={CATEGORIES}
+          defaultValue={modalDefaultValue(modal.pIdx, modal.cIdx)}
           onClose={() => setModal(null)}
           onSave={(val, isKniffel) =>
             updateScore(modal.pIdx, modal.cIdx, val, isKniffel)

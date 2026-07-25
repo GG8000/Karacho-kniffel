@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import Spinner from '../components/Spinner'
 
 export const NAME_CONFIRMED_KEY = 'kniffel-name-confirmed'
 
@@ -85,7 +86,7 @@ export default function ProfileSetup({ onDone }) {
         onClick={handleSave}
         disabled={busy}
       >
-        {busy ? 'Speichere…' : 'Weiter →'}
+        {busy ? <Spinner row label="Speichere…" size={16} /> : 'Weiter →'}
       </button>
 
       {profile?.handle && (

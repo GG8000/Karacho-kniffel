@@ -1,18 +1,34 @@
-import { getPlayerStats, clearHistory } from '../storage'
+import { getHistory, clearHistory } from '../storage'
 import { useAuth } from '../auth/AuthContext'
 import { useEffect, useState } from 'react'
+import { computeStats } from '../logic/stats'
+import { computeCategoryStats } from '../logic/categoryStats'
+import {
+  ScoreLineChart,
+  Histogram,
+  FormStrip,
+  HeadToHeadMatrix,
+  CategoryStatsView,
+} from '../components/StatCharts'
+import Spinner from '../components/Spinner'
+
+const MEDALS = ['🥇', '🥈', '🥉']
 
 export default function Statistics({ onBack }) {
   const { isLoggedIn } = useAuth()
   const [stats, setStats] = useState(null)
+  const [catStats, setCatStats] = useState({})
   const [selected, setSelected] = useState(null)
+  const [tab, setTab] = useState('leaderboard') // leaderboard | players
   const [clearDialog, setClearDialog] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    getPlayerStats()
-      .then((s) => {
-        if (!cancelled) setStats(s)
+    getHistory()
+      .then((h) => {
+        if (cancelled) return
+        setStats(computeStats(h))
+        setCatStats(computeCategoryStats(h))
       })
       .catch(() => {
         if (!cancelled) setStats({})
@@ -23,130 +39,320 @@ export default function Statistics({ onBack }) {
   }, [])
 
   const shell = (children) => (
-    <div style={{ position: 'fixed', inset: 0, background: '#1e1e1e', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: '#1e1e1e',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+        padding: 24,
+      }}
+    >
       {children}
     </div>
   )
 
-  if (stats === null) return shell(
-    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }}>Lade Statistiken…</div>
-  )
+  if (stats === null)
+    return shell(<Spinner label="Lade Statistiken…" />)
 
   const players = Object.values(stats)
   const selectedPlayer = selected ? stats[selected] : null
+  const ranked = [...players].sort((a, b) => b.rating - a.rating)
+
+  const section = (title, node) => (
+    <div style={{ marginTop: 4 }}>
+      <div
+        style={{
+          color: 'rgba(255,255,255,0.4)',
+          fontSize: 12,
+          letterSpacing: 2,
+          marginBottom: 8,
+        }}
+      >
+        {title}
+      </div>
+      {node}
+    </div>
+  )
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#1e1e1e', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: '#1e1e1e',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
       <div className="app-bar">
-        <button onClick={selected ? () => setSelected(null) : onBack} style={{ background: 'none', border: 'none', color: 'white', fontSize: 18, cursor: 'pointer', padding: '0 8px' }}>←</button>
+        <button
+          onClick={selected ? () => setSelected(null) : onBack}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'white',
+            fontSize: 18,
+            cursor: 'pointer',
+            padding: '0 8px',
+          }}
+        >
+          ←
+        </button>
         📊 STATISTIKEN
         <div style={{ width: 40 }} />
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Tabs (nur in der Übersicht) */}
+      {!selectedPlayer && (
+        <div style={{ display: 'flex', padding: '10px 16px 0', gap: 8 }}>
+          {[
+            ['leaderboard', '🏆 Rangliste'],
+            ['players', 'Spieler'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              style={{
+                flex: 1,
+                padding: '8px 0',
+                borderRadius: 8,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: 'bold',
+                background: tab === id ? '#673ab7' : 'rgba(255,255,255,0.06)',
+                color: tab === id ? 'white' : 'rgba(255,255,255,0.5)',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
-        {!selectedPlayer ? (
-          // Spielerliste
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: 16,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
+        {players.length === 0 && (
+          <div
+            style={{
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: 15,
+              textAlign: 'center',
+              padding: '32px 0',
+            }}
+          >
+            📊 Noch keine Spiele gespeichert.
+          </div>
+        )}
+
+        {selectedPlayer ? (
+          // ---- Detail mit Diagrammen ----
+          <>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div
+                style={{ color: '#673ab7', fontWeight: 'bold', fontSize: 22 }}
+              >
+                {selectedPlayer.name}
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div
+                  style={{ color: '#b39ddb', fontWeight: 'bold', fontSize: 22 }}
+                >
+                  {selectedPlayer.rating}
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10 }}>
+                  RATING
+                </div>
+              </div>
+            </div>
+
+            {[
+              ['🎮 Spiele', selectedPlayer.gamesPlayed],
+              ['🏆 Siege', selectedPlayer.wins],
+              ['📉 Niederlagen', selectedPlayer.losses],
+              [
+                '📈 Siegrate',
+                `${Math.round(selectedPlayer.winRate * 100)}%`,
+              ],
+              ['🎯 Ø Punkte', selectedPlayer.avgScore],
+              ['🥇 Bestleistung', selectedPlayer.bestScore],
+              ['🎲 Kniffel gesamt', selectedPlayer.totalKniffel],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid rgba(255,255,255,0.07)',
+                  padding: '9px 0',
+                  color: 'white',
+                }}
+              >
+                <span style={{ color: 'rgba(255,255,255,0.6)' }}>{label}</span>
+                <span style={{ fontWeight: 'bold' }}>{value}</span>
+              </div>
+            ))}
+
+            {section(
+              'SCORE-VERLAUF',
+              <ScoreLineChart history={selectedPlayer.scoreHistory} />,
+            )}
+            {section('FORM', <FormStrip form={selectedPlayer.form} />)}
+            {section(
+              'ENDPUNKTE-VERTEILUNG',
+              <Histogram
+                scores={selectedPlayer.scoreHistory.map((h) => h.score)}
+              />,
+            )}
+            {section(
+              'HEAD-TO-HEAD',
+              <HeadToHeadMatrix opponents={selectedPlayer.opponents} />,
+            )}
+            {section(
+              'KATEGORIEN',
+              <CategoryStatsView stat={catStats[selected]} />,
+            )}
+          </>
+        ) : tab === 'leaderboard' ? (
+          // ---- Rangliste ----
+          <>
+            {players.length > 0 && (
+              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+                Rating aus euren gemeinsamen Spielen{' '}
+                {isLoggedIn ? '· ☁ = Account' : ''}
+              </div>
+            )}
+            {ranked.map((p, i) => (
+              <button
+                key={p.id}
+                onClick={() => setSelected(p.id)}
+                style={{
+                  background:
+                    i === 0 ? 'rgba(103,58,183,0.28)' : 'rgba(103,58,183,0.12)',
+                  border:
+                    i === 0
+                      ? '1px solid #673ab7'
+                      : '1px solid rgba(103,58,183,0.3)',
+                  borderRadius: 12,
+                  padding: '12px 14px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <span
+                  style={{
+                    width: 24,
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    color: 'rgba(255,255,255,0.6)',
+                    textAlign: 'center',
+                  }}
+                >
+                  {MEDALS[i] ?? i + 1}
+                </span>
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: 15 }}>
+                    {p.name} {p.isAccount && <span title="Account">☁</span>}
+                  </div>
+                  <div
+                    style={{
+                      color: 'rgba(255,255,255,0.4)',
+                      fontSize: 11,
+                      marginTop: 2,
+                    }}
+                  >
+                    {p.gamesPlayed} Sp · {p.wins} S ·{' '}
+                    {Math.round(p.winRate * 100)}% · Ø{p.avgScore}
+                  </div>
+                </div>
+                <div
+                  style={{ color: '#b39ddb', fontWeight: 'bold', fontSize: 18 }}
+                >
+                  {p.rating}
+                </div>
+              </button>
+            ))}
+          </>
+        ) : (
+          // ---- Spielerliste ----
           <>
             <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
               {isLoggedIn
                 ? '☁ = geräteübergreifend · Freund-Code unter 👤 Konto'
                 : 'Nicht angemeldet — Statistiken nur auf diesem Gerät.'}
             </div>
-
-            {players.length === 0 && (
-              <div style={{
-                color: 'rgba(255,255,255,0.4)', fontSize: 15,
-                textAlign: 'center', padding: '32px 0',
-              }}>
-                📊 Noch keine Spiele gespeichert.
-              </div>
-            )}
-
-            {players.map(p => (
+            {players.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setSelected(p.id)}
                 style={{
                   background: 'rgba(103,58,183,0.15)',
                   border: '1px solid rgba(103,58,183,0.4)',
-                  borderRadius: 12, padding: '14px 18px',
-                  color: 'white', cursor: 'pointer',
-                  textAlign: 'left', display: 'flex',
-                  justifyContent: 'space-between', alignItems: 'center',
+                  borderRadius: 12,
+                  padding: '14px 18px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
               >
                 <div>
                   <div style={{ fontWeight: 'bold', fontSize: 16 }}>
-                    {p.name} {p.isAccount && <span title="geräteübergreifend">☁</span>}
+                    {p.name}{' '}
+                    {p.isAccount && <span title="geräteübergreifend">☁</span>}
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 }}>
+                  <div
+                    style={{
+                      color: 'rgba(255,255,255,0.4)',
+                      fontSize: 12,
+                      marginTop: 2,
+                    }}
+                  >
                     {p.gamesPlayed} Spiele · {p.wins} Siege
                   </div>
                 </div>
                 <div style={{ color: '#673ab7', fontSize: 20 }}>›</div>
               </button>
             ))}
-
             {players.length > 0 && (
               <button
                 onClick={() => setClearDialog(true)}
-                style={{ marginTop: 8, background: 'none', border: 'none', color: 'rgba(255,100,100,0.5)', fontSize: 13, cursor: 'pointer' }}
+                style={{
+                  marginTop: 8,
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,100,100,0.5)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
               >
                 Lokalen Verlauf löschen
               </button>
-            )}
-          </>
-        ) : (
-          // Detailansicht
-          <>
-            <div style={{ color: '#673ab7', fontWeight: 'bold', fontSize: 22 }}>{selectedPlayer.name}</div>
-
-            {/* Kern-Stats */}
-            {[
-              ['🎮 Gespielte Spiele', selectedPlayer.gamesPlayed],
-              ['🏆 Siege', selectedPlayer.wins],
-              ['📉 Niederlage', selectedPlayer.gamesPlayed - selectedPlayer.wins],
-              ['🎲 Kniffel gesamt', selectedPlayer.totalKniffel],
-              ['🎲 Ø Kniffel pro Spiel', selectedPlayer.gamesPlayed > 0
-                ? (selectedPlayer.totalKniffel / selectedPlayer.gamesPlayed).toFixed(2)
-                : '–'],
-              ['🔥 Spiele mit Kniffel', selectedPlayer.totalGamesWithKniffel],
-              ['📈 Siegrate', selectedPlayer.gamesPlayed > 0
-                ? `${Math.round((selectedPlayer.wins / selectedPlayer.gamesPlayed) * 100)}%`
-                : '–'],
-            ].map(([label, value]) => (
-              <div key={label} style={{
-                display: 'flex', justifyContent: 'space-between',
-                borderBottom: '1px solid rgba(255,255,255,0.07)',
-                padding: '10px 0', color: 'white',
-              }}>
-                <span style={{ color: 'rgba(255,255,255,0.6)' }}>{label}</span>
-                <span style={{ fontWeight: 'bold' }}>{value}</span>
-              </div>
-            ))}
-
-            {/* Gegner-Statistik */}
-            {Object.keys(selectedPlayer.opponents).length > 0 && (
-              <>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 8, letterSpacing: 2 }}>
-                  HEAD-TO-HEAD
-                </div>
-                {Object.entries(selectedPlayer.opponents)
-                  .sort((a, b) => b[1].played - a[1].played)
-                  .map(([opponent, record]) => (
-                    <div key={opponent} style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      borderRadius: 10, padding: '10px 14px',
-                      display: 'flex', justifyContent: 'space-between',
-                    }}>
-                      <span style={{ color: 'white' }}>{opponent}</span>
-                      <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
-                        {record.played}× · {record.won}W {record.lost}L
-                      </span>
-                    </div>
-                  ))}
-              </>
             )}
           </>
         )}
@@ -157,11 +363,26 @@ export default function Statistics({ onBack }) {
           <div className="dialog">
             <div className="dialog-title">Lokalen Verlauf löschen?</div>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
-              Löscht nur den Zwischenspeicher auf diesem Gerät. Bereits synchronisierte Spiele bleiben in der Cloud.
+              Löscht nur den Zwischenspeicher auf diesem Gerät. Bereits
+              synchronisierte Spiele bleiben in der Cloud.
             </div>
             <div className="dialog-actions">
-              <button className="btn-outline" onClick={() => setClearDialog(false)}>Abbrechen</button>
-              <button className="btn-danger" onClick={() => { clearHistory(); setClearDialog(false); onBack() }}>Löschen</button>
+              <button
+                className="btn-outline"
+                onClick={() => setClearDialog(false)}
+              >
+                Abbrechen
+              </button>
+              <button
+                className="btn-danger"
+                onClick={() => {
+                  clearHistory()
+                  setClearDialog(false)
+                  onBack()
+                }}
+              >
+                Löschen
+              </button>
             </div>
           </div>
         </div>

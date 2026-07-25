@@ -3,6 +3,7 @@ import QRCode from 'qrcode'
 import { useAuth } from '../auth/AuthContext'
 import QrScanner from '../components/QrScanner'
 import PlayerOrderList from '../components/PlayerOrderList'
+import Spinner from '../components/Spinner'
 import OnlineGame from './OnlineGame'
 import {
   createGame,
@@ -23,6 +24,7 @@ export default function OnlineLobby({ onBack }) {
   const [scanning, setScanning] = useState(false)
   const [qrSrc, setQrSrc] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [busyLabel, setBusyLabel] = useState('')
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function OnlineLobby({ onBack }) {
 
   async function handleCreate() {
     setBusy(true)
+    setBusyLabel('Spiel wird erstellt…')
     setError(null)
     try {
       const { id, join_code } = await createGame('normal')
@@ -64,6 +67,7 @@ export default function OnlineLobby({ onBack }) {
     const value = (code ?? codeInput).trim()
     if (!value) return
     setBusy(true)
+    setBusyLabel('Trete Spiel bei…')
     setError(null)
     try {
       const { id } = await joinByCode(value)
@@ -146,6 +150,11 @@ export default function OnlineLobby({ onBack }) {
         onClose={() => setScanning(false)}
       />
     )
+  }
+
+  // Lobby angefragt, aber Zustand noch nicht da → laden
+  if (gameId && !snap) {
+    return shell(<Spinner label="Lade Lobby…" />)
   }
 
   // In der Lobby
@@ -312,6 +321,11 @@ export default function OnlineLobby({ onBack }) {
         </button>
       </div>
 
+      {busy && (
+        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+          <Spinner row label={busyLabel} />
+        </div>
+      )}
       {error && <div style={{ color: '#ff5252', fontSize: 13 }}>{error}</div>}
       <button className="btn-outline" onClick={onBack}>
         ← Zurück

@@ -11,8 +11,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Kniffel" />
-    <link rel="apple-touch-icon" href="/icons/Icon-192.png" />
-    <link rel="icon" type="image/png" href="/icons/Icon-192.png" />
+    <!-- iOS nimmt ausschliesslich dieses Icon fuer "Zum Home-Bildschirm".
+         180x180 und ohne Alphakanal, sonst rendert iOS die Ecken schwarz. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/Icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/Icon-512.png" />
     <title>Kniffel</title>
   </head>
   <body>

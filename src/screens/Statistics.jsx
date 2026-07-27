@@ -3,13 +3,18 @@ import { useAuth } from '../auth/AuthContext'
 import { useEffect, useState } from 'react'
 import { computeStats } from '../logic/stats'
 import { computeCategoryStats } from '../logic/categoryStats'
+import { computeOrderStats } from '../logic/orderStats'
+import { computeKniffelFaces } from '../logic/kniffelFaces'
 import {
   ScoreLineChart,
   Histogram,
   FormStrip,
   HeadToHeadMatrix,
   CategoryStatsView,
+  OrderStatsView,
+  KniffelFaceView,
 } from '../components/StatCharts'
+import MonthlyRecapView from '../components/MonthlyRecapView'
 import Spinner from '../components/Spinner'
 
 const MEDALS = ['🥇', '🥈', '🥉']
@@ -18,8 +23,11 @@ export default function Statistics({ onBack }) {
   const { isLoggedIn } = useAuth()
   const [stats, setStats] = useState(null)
   const [catStats, setCatStats] = useState({})
+  const [orderStats, setOrderStats] = useState({})
+  const [faceStats, setFaceStats] = useState({})
+  const [history, setHistory] = useState([])
   const [selected, setSelected] = useState(null)
-  const [tab, setTab] = useState('leaderboard') // leaderboard | players
+  const [tab, setTab] = useState('leaderboard') // leaderboard | players | month
   const [clearDialog, setClearDialog] = useState(false)
 
   useEffect(() => {
@@ -27,8 +35,11 @@ export default function Statistics({ onBack }) {
     getHistory()
       .then((h) => {
         if (cancelled) return
+        setHistory(h)
         setStats(computeStats(h))
         setCatStats(computeCategoryStats(h))
+        setOrderStats(computeOrderStats(h))
+        setFaceStats(computeKniffelFaces(h))
       })
       .catch(() => {
         if (!cancelled) setStats({})
@@ -114,6 +125,7 @@ export default function Statistics({ onBack }) {
           {[
             ['leaderboard', '🏆 Rangliste'],
             ['players', 'Spieler'],
+            ['month', '📅 Monat'],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -124,7 +136,7 @@ export default function Statistics({ onBack }) {
                 borderRadius: 8,
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 'bold',
                 background: tab === id ? '#673ab7' : 'rgba(255,255,255,0.06)',
                 color: tab === id ? 'white' : 'rgba(255,255,255,0.5)',
@@ -146,7 +158,7 @@ export default function Statistics({ onBack }) {
           gap: 12,
         }}
       >
-        {players.length === 0 && (
+        {players.length === 0 && tab !== 'month' && (
           <div
             style={{
               color: 'rgba(255,255,255,0.4)',
@@ -232,10 +244,43 @@ export default function Statistics({ onBack }) {
               'KATEGORIEN',
               <CategoryStatsView stat={catStats[selected]} />,
             )}
+            {section(
+              'REIHENFOLGE',
+              <OrderStatsView stat={orderStats[selected]} />,
+            )}
+            {section(
+              'KNIFFEL-WÜRFEL',
+              <KniffelFaceView stat={faceStats[selected]} />,
+            )}
           </>
+        ) : tab === 'month' ? (
+          <MonthlyRecapView games={history} />
         ) : tab === 'leaderboard' ? (
           // ---- Rangliste ----
           <>
+            {faceStats.__global?.total > 0 && (
+              <div
+                style={{
+                  background: 'rgba(103,58,183,0.15)',
+                  border: '1px solid rgba(103,58,183,0.4)',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                }}
+              >
+                <div
+                  style={{
+                    color: 'rgba(255,255,255,0.4)',
+                    fontSize: 12,
+                    letterSpacing: 2,
+                    marginBottom: 10,
+                  }}
+                >
+                  HÄUFIGSTER KNIFFEL
+                </div>
+                <KniffelFaceView stat={faceStats.__global} />
+              </div>
+            )}
+
             {players.length > 0 && (
               <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
                 Rating aus euren gemeinsamen Spielen{' '}

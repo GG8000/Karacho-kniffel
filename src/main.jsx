@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './auth/AuthContext'
 import Toaster from './components/Toaster'
+import KniffelCelebration from './components/KniffelCelebration'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -10,6 +11,8 @@ createRoot(document.getElementById('root')).render(
       <App />
       {/* Immer gemountet, damit der Speicher-Toast jede Screen-Navigation überlebt */}
       <Toaster />
+      {/* Ebenso die Kniffel-Feier — sie wird aus jedem Spielmodus abgefeuert */}
+      <KniffelCelebration />
     </AuthProvider>
   </StrictMode>
 )

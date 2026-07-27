@@ -274,3 +274,76 @@ html, body, #root {
   max-width: calc(100vw - 32px);
   text-align: center;
 }
+/* --- Kniffel-Feier (siehe components/KniffelCelebration.jsx) -------------- */
+
+/* Der ganze Bildschirm bekommt einen Schlag mit. */
+@keyframes kniffelShake {
+  0%, 100% { transform: translate(0, 0); }
+  8%   { transform: translate(-9px, 5px) rotate(-0.5deg); }
+  18%  { transform: translate(8px, -4px) rotate(0.4deg); }
+  28%  { transform: translate(-6px, -5px) rotate(-0.3deg); }
+  38%  { transform: translate(5px, 4px) rotate(0.25deg); }
+  50%  { transform: translate(-3px, 2px); }
+  62%  { transform: translate(2px, -1px); }
+}
+
+/* Weisser Blitz im Moment des Einschlags. */
+@keyframes kniffelFlash {
+  0%   { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+/* Druckwelle, die nach aussen läuft. */
+@keyframes kniffelRing {
+  0%   { transform: translate(-50%, -50%) scale(0.15); opacity: 0.95; border-width: 7px; }
+  100% { transform: translate(-50%, -50%) scale(3); opacity: 0; border-width: 1px; }
+}
+
+/* Würfel schiessen von unten ins Bild und federn beim Aufschlag. */
+@keyframes kniffelDieIn {
+  0%   { transform: translateY(120vh) rotate(var(--spin, 360deg)) scale(0.35); opacity: 0; }
+  50%  { transform: translateY(-18px) rotate(0deg) scale(1.15); opacity: 1; }
+  68%  { transform: translateY(0) rotate(0deg) scale(0.92); }
+  84%  { transform: translateY(-5px) rotate(0deg) scale(1.03); }
+  100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+}
+
+/* Funken radial nach aussen, mit leichtem Fall nach unten. */
+@keyframes kniffelSpark {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0.15); opacity: 0; }
+}
+
+/* Schriftzug knallt mit Überschwung rein. */
+@keyframes kniffelText {
+  0%   { transform: scale(2.6); opacity: 0; letter-spacing: 28px; filter: blur(10px); }
+  45%  { transform: scale(0.93); opacity: 1; letter-spacing: 2px; filter: blur(0); }
+  62%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; letter-spacing: 4px; }
+}
+
+@keyframes kniffelSubIn {
+  0%   { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.kniffel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  transition: opacity 0.35s ease-out;
+}
+
+/* Wer Bewegung reduziert haben will, bekommt nur noch das Ein-/Ausblenden. */
+@media (prefers-reduced-motion: reduce) {
+  .kniffel-overlay,
+  .kniffel-overlay * {
+    animation: none !important;
+  }
+}

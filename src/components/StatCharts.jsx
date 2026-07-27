@@ -1,6 +1,11 @@
+import { useState } from 'react'
 import { currentStreak } from '../logic/stats'
+import { pairRate, strongestHabits, ORDER_INDICES } from '../logic/orderStats'
+import { topFace } from '../logic/kniffelFaces'
+import Die, { FACE_NAME } from './Die'
 
 const PURPLE = '#b388ff'
+const GOLD = '#ffc400'
 const WIN = '#69ff47'
 const LOSS = '#ff5252'
 const GRID = 'rgba(255,255,255,0.08)'
@@ -359,6 +364,307 @@ export function HeadToHeadMatrix({ opponents }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// --- Reihenfolge (nur Normal-Modus, nur Spiele mit gespeichertem `turn`) ----
+
+// Wie eindeutig ist eine Gewohnheit? Nur für die Einordnung im Text.
+function verdict(rate) {
+  if (rate >= 0.85) return { text: 'feste Gewohnheit', color: WIN }
+  if (rate >= 0.65) return { text: 'klare Tendenz', color: PURPLE }
+  if (rate >= 0.55) return { text: 'leichte Tendenz', color: MUTED }
+  return { text: 'kein Muster', color: MUTED }
+}
+
+// Ein Kategorie-Dropdown für den Duell-Check.
+function CatSelect({ value, onChange }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      style={{
+        flex: 1,
+        minWidth: 0,
+        background: 'rgba(255,255,255,0.08)',
+        color: 'white',
+        border: '1px solid rgba(255,255,255,0.15)',
+        borderRadius: 8,
+        padding: '7px 8px',
+        fontSize: 13,
+      }}
+    >
+      {ORDER_INDICES.map((ci) => (
+        <option key={ci} value={ci} style={{ background: '#1e1e1e' }}>
+          {CAT_LABEL[ci]}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+// Reihenfolge-Statistik eines Spielers: wann trägt er was ein, und welche
+// Kategorie kommt konsequent vor welcher?
+export function OrderStatsView({ stat }) {
+  // Voreinstellung ist genau die Streitfrage am Tisch: große vor kleiner Straße.
+  const [a, setA] = useState(11)
+  const [b, setB] = useState(10)
+
+  if (!stat || !stat.gamesWithOrder)
+    return (
+      <Empty text="Noch keine Reihenfolge-Daten — wird ab den nächsten Normal-Spielen gefüllt." />
+    )
+
+  const duel = pairRate(stat, a, b)
+  const habits = strongestHabits(stat, {
+    minGames: Math.min(3, stat.gamesWithOrder),
+  })
+  const v = duel ? verdict(duel.rate) : null
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ color: MUTED, fontSize: 12 }}>
+        Aus {stat.gamesWithOrder}{' '}
+        {stat.gamesWithOrder === 1 ? 'Spiel' : 'Spielen'} mit erfasster
+        Reihenfolge
+      </div>
+
+      {/* Duell-Check: kommt A wirklich vor B? */}
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: 10,
+          padding: 12,
+        }}
+      >
+        <div style={{ color: 'white', fontSize: 13, marginBottom: 8 }}>
+          Kommt zuerst?
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <CatSelect value={a} onChange={setA} />
+          <span style={{ color: MUTED, fontSize: 12, flexShrink: 0 }}>vor</span>
+          <CatSelect value={b} onChange={setB} />
+        </div>
+
+        {a === b ? (
+          <div style={{ color: MUTED, fontSize: 12, marginTop: 10 }}>
+            Zwei verschiedene Kategorien wählen.
+          </div>
+        ) : duel ? (
+          <>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+                marginTop: 10,
+              }}
+            >
+              <span style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>
+                {pct(duel.rate)}
+              </span>
+              <span style={{ color: MUTED, fontSize: 11 }}>
+                {duel.before} von {duel.total} Spielen · {v.text}
+              </span>
+            </div>
+            <div
+              style={{
+                height: 6,
+                background: 'rgba(255,255,255,0.08)',
+                borderRadius: 3,
+                marginTop: 6,
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: pct(duel.rate),
+                  height: '100%',
+                  background: v.color,
+                }}
+              />
+            </div>
+          </>
+        ) : (
+          <div style={{ color: MUTED, fontSize: 12, marginTop: 10 }}>
+            Für dieses Paar gibt es noch keine Daten.
+          </div>
+        )}
+      </div>
+
+      {/* Ø-Position jeder Kategorie auf der 1–13-Achse */}
+      <div>
+        <div style={{ color: MUTED, fontSize: 12, marginBottom: 8 }}>
+          Ø Position im Block (früh → spät)
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {stat.ranked.map((ci) => (
+            <div
+              key={ci}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <span
+                style={{
+                  width: 88,
+                  flexShrink: 0,
+                  color: 'white',
+                  fontSize: 12,
+                }}
+              >
+                {CAT_LABEL[ci]}
+              </span>
+              <div
+                style={{
+                  flex: 1,
+                  height: 6,
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: 3,
+                  position: 'relative',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: `${((stat.avgTurn[ci] - 1) / 12) * 100}%`,
+                    top: -3,
+                    marginLeft: -6,
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    background: PURPLE,
+                  }}
+                />
+              </div>
+              <span
+                style={{
+                  width: 26,
+                  flexShrink: 0,
+                  textAlign: 'right',
+                  color: MUTED,
+                  fontSize: 11,
+                }}
+              >
+                {de1(stat.avgTurn[ci])}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Die eindeutigsten Muster */}
+      {habits.length > 0 && (
+        <div>
+          <div style={{ color: MUTED, fontSize: 12, marginBottom: 8 }}>
+            Stärkste Gewohnheiten
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {habits.map((h) => (
+              <div
+                key={`${h.a}>${h.b}`}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: 'rgba(255,255,255,0.04)',
+                  borderRadius: 8,
+                  padding: '7px 10px',
+                }}
+              >
+                <span style={{ color: 'white', fontSize: 12 }}>
+                  {CAT_LABEL[h.a]} <span style={{ color: MUTED }}>vor</span>{' '}
+                  {CAT_LABEL[h.b]}
+                </span>
+                <span
+                  style={{
+                    color: h.rate >= 0.85 ? WIN : PURPLE,
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    flexShrink: 0,
+                  }}
+                >
+                  {pct(h.rate)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// --- Kniffel-Augenzahlen ---------------------------------------------------
+
+// Welche Augenzahl fällt am häufigsten als Kniffel? Speist sich aus der
+// Kniffel-Zeile und aus fünf gleichen Würfeln im oberen Teil.
+export function KniffelFaceView({ stat }) {
+  if (!stat || !stat.total)
+    return (
+      <Empty text="Noch keine Kniffel erfasst — erscheint, sobald einer gewürfelt wird." />
+    )
+
+  const top = topFace(stat)
+  const max = Math.max(...stat.faces, 1)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {[1, 2, 3, 4, 5, 6].map((face) => {
+        const count = stat.faces[face - 1]
+        const isTop = top && face === top.face && count > 0
+        return (
+          <div
+            key={face}
+            style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+          >
+            <Die face={face} size={26} />
+            <div
+              style={{
+                flex: 1,
+                height: 10,
+                background: 'rgba(255,255,255,0.07)',
+                borderRadius: 5,
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: `${(count / max) * 100}%`,
+                  height: '100%',
+                  borderRadius: 5,
+                  background: isTop ? GOLD : PURPLE,
+                  transition: 'width 0.3s',
+                }}
+              />
+            </div>
+            <span
+              style={{
+                width: 22,
+                flexShrink: 0,
+                textAlign: 'right',
+                fontSize: 13,
+                fontWeight: isTop ? 'bold' : 'normal',
+                color: isTop ? GOLD : 'rgba(255,255,255,0.75)',
+              }}
+            >
+              {count}
+            </span>
+          </div>
+        )
+      })}
+
+      <div style={{ color: MUTED, fontSize: 12, marginTop: 2 }}>
+        {stat.total} {stat.total === 1 ? 'Kniffel' : 'Kniffel'}
+        {top && ` · ${FACE_NAME[top.face]} führt`}
+      </div>
+
+      {stat.unknown > 0 && (
+        <div style={{ color: MUTED, fontSize: 11, lineHeight: 1.5 }}>
+          Davon {stat.unknown} ohne Angabe der Augenzahl — aus Spielen, bevor sie
+          im Modal antippbar war.
+        </div>
+      )}
     </div>
   )
 }

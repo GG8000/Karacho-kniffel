@@ -268,11 +268,11 @@ export default function App() {
     };
   }, [isLoggedIn]);
 
-  function updateScore(pIdx, cIdx, value, isKniffel = false) {
+  function updateScore(pIdx, cIdx, value, isKniffel = false, face = null) {
     setScores((prev) => {
       const playerScores = {
         ...prev[pIdx],
-        [cIdx]: { value, timestamp: Date.now(), isKniffel },
+        [cIdx]: { value, timestamp: Date.now(), isKniffel, face },
       };
       const updated = { ...prev, [pIdx]: refreshTotals(playerScores) };
       if (isGameComplete(players, updated)) {
@@ -350,10 +350,22 @@ export default function App() {
     // Kategorie-Statistik). Nur die gespielten Felder, ohne abgeleitete Summen.
     const cells = players.map((_, pIdx) => {
       const raw = scores[pIdx] || {};
+      // Spielreihenfolge aus den Eintrags-Timestamps ableiten (turn = 1..13).
+      // Korrigierte Felder rutschen dabei ans Ende — sie wurden zuletzt gesetzt.
+      const played = PLAYABLE_INDICES.filter((ci) => raw[ci]).sort(
+        (a, b) => (raw[a].timestamp ?? 0) - (raw[b].timestamp ?? 0),
+      );
       const out = {};
-      for (const ci of PLAYABLE_INDICES) {
-        if (raw[ci]) out[ci] = { value: raw[ci].value, isKniffel: !!raw[ci].isKniffel };
-      }
+      played.forEach((ci, i) => {
+        out[ci] = {
+          value: raw[ci].value,
+          isKniffel: !!raw[ci].isKniffel,
+          turn: i + 1,
+          // Nur die Kniffel-Zeile trägt eine getippte Augenzahl; im oberen Teil
+          // steckt sie ohnehin schon im Kategorie-Index.
+          ...(raw[ci].face ? { face: raw[ci].face } : {}),
+        };
+      });
       return out;
     });
     return {
@@ -584,8 +596,8 @@ export default function App() {
           categories={CATEGORIES}
           defaultValue={modalDefaultValue(modal.pIdx, modal.cIdx)}
           onClose={() => setModal(null)}
-          onSave={(val, isKniffel) =>
-            updateScore(modal.pIdx, modal.cIdx, val, isKniffel)
+          onSave={(val, isKniffel, face) =>
+            updateScore(modal.pIdx, modal.cIdx, val, isKniffel, face)
           }
           onDelete={() => removeScore(modal.pIdx, modal.cIdx)}
         />

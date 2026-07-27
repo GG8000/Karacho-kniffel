@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { celebrateKniffel } from '../lib/celebrate'
+import Die from './Die'
 
 const FIX_POINTS = { 'FH': 25, 'KL STR': 30, 'GR STR': 40, 'KNFFL': 50 }
 
@@ -17,6 +19,17 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, 
     setSliderVal(start)
   }, [cIdx, start])
 
+
+  const isKniffelRow = catName === 'KNFFL'
+
+  // Speichert und feuert bei einem Kniffel zusätzlich die Feier ab. Läuft für
+  // alle Spielmodi, weil sie sich dieses Modal teilen. face wandert nur im
+  // Normal-Modus bis in die Statistik — die anderen Modi speichern kein
+  // Kategorie-Raster, dort treibt sie nur die Animation.
+  function save(value, isKniffel, face = null) {
+    if (isKniffel) celebrateKniffel({ kind: isKniffelRow ? 'category' : 'upper', face })
+    onSave(value, isKniffel, face)
+  }
 
   const diceButtons = Array.from({ length: 6 }, (_, index) => {
     const label = index === 0 ? 'X' : `${index}x`
@@ -85,15 +98,66 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, 
                   <button
                     key={label}
                     className="btn-grid-item"
-                    onClick={() => onSave(val, index === 5)}  // ← 5x = automatisch Kniffel
+                    onClick={() =>                          // ← 5x = automatisch Kniffel
+                      save(val, index === 5, index === 5 ? cIdx + 1 : null)
+                    }
                   >
                     {label}
                   </button>
                 ))}
               </div>
+            ) : isKniffelRow ? (
+              // Kniffel-Zeile: die Augenzahl wird direkt angetippt. Ein Tap wie
+              // vorher beim OK-Button, liefert aber die Daten für die Statistik.
+              <>
+                <div
+                  style={{
+                    textAlign: 'center',
+                    color: 'rgba(255,255,255,0.55)',
+                    fontSize: 14,
+                  }}
+                >
+                  Welchen Kniffel?
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: 12,
+                    justifyItems: 'center',
+                  }}
+                >
+                  {[1, 2, 3, 4, 5, 6].map((face) => (
+                    <button
+                      key={face}
+                      aria-label={`Kniffel mit ${face}`}
+                      onClick={() => save(FIX_POINTS[catName], true, face)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 4,
+                        cursor: 'pointer',
+                        lineHeight: 0,
+                      }}
+                    >
+                      <Die face={face} size="min(17vw, 62px)" />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  className="btn-grid-item"
+                  onClick={() => onSave(0, false)}
+                  style={{ alignSelf: 'center' }}
+                >
+                  Streichen
+                </button>
+              </>
             ) : (
               <div style={{ display: 'flex', justifyContent: 'space-evenly' }}>
-                <button className="btn-primary" onClick={() => onSave(FIX_POINTS[catName], false)}>
+                <button
+                  className="btn-primary"
+                  onClick={() => save(FIX_POINTS[catName], false)}
+                >
                   OK
                 </button>
                 <button className="btn-grid-item" onClick={() => onSave(0, false)}>

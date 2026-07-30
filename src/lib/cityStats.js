@@ -1,8 +1,8 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 
 // Liest die aggregierte View city_stats. Die Rohtabelle app_sessions ist per RLS
-// für niemanden lesbar — diese View ist die einzige Sicht nach außen, und sie
-// zeigt eine Stadt erst ab drei Geräten (siehe sql/city_stats.sql).
+// für niemanden lesbar — diese View ist die einzige Sicht nach außen und liefert
+// nur Summen pro Stadt, keine Gerätekennungen (siehe sql/city_stats.sql).
 export async function fetchCityStats() {
   if (!isSupabaseConfigured) return []
 

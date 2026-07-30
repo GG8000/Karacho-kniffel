@@ -281,8 +281,8 @@ export default function Statistics({ onBack }) {
           // ---- Städte ----
           <>
             <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
-              Woher gekniffelt wird — anonym und erst ab drei Geräten pro Stadt.
-              Abschalten unter 👤 Konto.
+              Woher gekniffelt wird — ohne Namen und ohne Konto-Bezug. Abschalten
+              unter 👤 Konto.
             </div>
             {cities === null ? (
               <Spinner label="Lade Städte…" />

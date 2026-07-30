@@ -519,7 +519,7 @@ export default function Profile({ onBack }) {
           >
             {geoBlocked
               ? 'Dein Browser sendet „Do Not Track“ — es wird nichts erfasst.'
-              : 'Erfasst wird die Stadt (aus der IP-Adresse abgeleitet) und die Zeit, die in der App verbracht wird. Die IP-Adresse selbst wird nicht gespeichert, und nichts davon hängt an deinem Konto. In der Statistik erscheint eine Stadt erst, wenn mindestens drei Geräte von dort gespielt haben.'}
+              : 'Erfasst wird die Stadt (aus der IP-Adresse abgeleitet) und die Zeit, die in der App verbracht wird. Die IP-Adresse selbst wird nicht gespeichert, und nichts davon hängt an deinem Konto. Die Stadt erscheint für alle Spieler in der Statistik — schon ab einer einzigen Partie von dort.'}
           </div>
 
           {!geoOn && !geoBlocked && (

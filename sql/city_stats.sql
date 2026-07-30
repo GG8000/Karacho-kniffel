@@ -7,8 +7,9 @@
 --   * keine IP-Adresse, nur die daraus abgeleitete Stadt (api/session.js)
 --   * kein Kontobezug, nur eine gerätelokale Zufallskennung
 --   * app_sessions ist per RLS für NIEMANDEN lesbar
---   * nach außen existiert allein die View city_stats, und die zeigt eine
---     Stadt erst ab HAVING >= 3 Geräten (k-Anonymität)
+--   * nach außen existiert allein die View city_stats — aggregiert und ohne
+--     Gerätekennungen. Die Schwelle im HAVING steht auf 1: eine Stadt ist
+--     schon ab einem einzigen Gerät sichtbar (siehe Kommentar dort).
 
 create table if not exists public.app_sessions (
   session_id     uuid primary key,          -- pro App-Start, vom Client erzeugt
@@ -91,10 +92,11 @@ revoke execute on function public.forget_device(text) from anon, authenticated;
 -- RLS von app_sessions vorbei — genau dafür ist sie da. Supabase' Linter meldet
 -- das als "security definer view"; das ist hier gewollt.
 --
--- Das HAVING ist die k-Anonymität: eine einzelne Person soll aus der Karte nicht
--- ablesbar sein. Zum lokalen Testen kurz auf >= 1 setzen und danach
--- zurückdrehen — solange keine drei Geräte aus einer Stadt da sind, ist die
--- Karte in der App leer.
+-- Das HAVING ist die Stellschraube für k-Anonymität und steht bewusst auf 1:
+-- eine Stadt soll auch dann auf der Karte auftauchen, wenn von dort nur einmal
+-- gespielt wurde. Der Preis ist, dass eine Zeile mit genau einem Gerät faktisch
+-- zeigt, wie lange eine einzelne Person gespielt hat. Höher setzen (z.B. 3)
+-- verbirgt das wieder, um den Preis leerer Städte am Anfang.
 
 create or replace view public.city_stats as
   select
@@ -108,8 +110,10 @@ create or replace view public.city_stats as
     max(updated_at)              as last_seen
   from public.app_sessions
   where city is not null
-    and active_seconds >= 30            -- Zufallsaufrufe und Fehlstarts raus
+    -- Nur echte Fehlstarts raus. Absichtlich niedrig: eine kurze Partie soll
+    -- die Stadt schon sichtbar machen.
+    and active_seconds >= 10
   group by city, country
-  having count(distinct device_id) >= 3;
+  having count(distinct device_id) >= 1;
 
 grant select on public.city_stats to anon, authenticated;

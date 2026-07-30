@@ -55,14 +55,7 @@ export default function CityMap({ cities = [] }) {
   const [selected, setSelected] = useState(null)
 
   if (cities.length === 0) {
-    return (
-      <Empty
-        text={
-          'Noch keine Städte-Daten. Eine Stadt erscheint erst, wenn mindestens ' +
-          'drei Geräte von dort gespielt haben.'
-        }
-      />
-    )
+    return <Empty text="Noch keine Städte-Daten." />
   }
 
   const plotted = cities.filter(

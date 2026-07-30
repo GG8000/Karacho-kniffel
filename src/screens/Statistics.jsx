@@ -15,6 +15,8 @@ import {
   KniffelFaceView,
 } from '../components/StatCharts'
 import MonthlyRecapView from '../components/MonthlyRecapView'
+import CityMap from '../components/CityMap'
+import { fetchCityStats } from '../lib/cityStats'
 import Spinner from '../components/Spinner'
 
 const MEDALS = ['🥇', '🥈', '🥉']
@@ -27,8 +29,10 @@ export default function Statistics({ onBack }) {
   const [faceStats, setFaceStats] = useState({})
   const [history, setHistory] = useState([])
   const [selected, setSelected] = useState(null)
-  const [tab, setTab] = useState('leaderboard') // leaderboard | players | month
+  // leaderboard | players | month | cities
+  const [tab, setTab] = useState('leaderboard')
   const [clearDialog, setClearDialog] = useState(false)
+  const [cities, setCities] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -43,6 +47,22 @@ export default function Statistics({ onBack }) {
       })
       .catch(() => {
         if (!cancelled) setStats({})
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Städte-Daten haben nichts mit der Spielhistorie zu tun und laufen deshalb in
+  // einem eigenen Effect — sie sollen deren Ladepfad nicht ausbremsen.
+  useEffect(() => {
+    let cancelled = false
+    fetchCityStats()
+      .then((rows) => {
+        if (!cancelled) setCities(rows)
+      })
+      .catch(() => {
+        if (!cancelled) setCities([])
       })
     return () => {
       cancelled = true
@@ -126,17 +146,19 @@ export default function Statistics({ onBack }) {
             ['leaderboard', '🏆 Rangliste'],
             ['players', 'Spieler'],
             ['month', '📅 Monat'],
+            ['cities', '🗺️ Städte'],
           ].map(([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
               style={{
                 flex: 1,
-                padding: '8px 0',
+                // Bei vier Tabs wird die Zeile am Handy eng.
+                padding: '8px 2px',
                 borderRadius: 8,
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 'bold',
                 background: tab === id ? '#673ab7' : 'rgba(255,255,255,0.06)',
                 color: tab === id ? 'white' : 'rgba(255,255,255,0.5)',
@@ -158,7 +180,7 @@ export default function Statistics({ onBack }) {
           gap: 12,
         }}
       >
-        {players.length === 0 && tab !== 'month' && (
+        {players.length === 0 && tab !== 'month' && tab !== 'cities' && (
           <div
             style={{
               color: 'rgba(255,255,255,0.4)',
@@ -255,6 +277,19 @@ export default function Statistics({ onBack }) {
           </>
         ) : tab === 'month' ? (
           <MonthlyRecapView games={history} />
+        ) : tab === 'cities' ? (
+          // ---- Städte ----
+          <>
+            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+              Woher gekniffelt wird — anonym und erst ab drei Geräten pro Stadt.
+              Abschalten unter 👤 Konto.
+            </div>
+            {cities === null ? (
+              <Spinner label="Lade Städte…" />
+            ) : (
+              <CityMap cities={cities} />
+            )}
+          </>
         ) : tab === 'leaderboard' ? (
           // ---- Rangliste ----
           <>

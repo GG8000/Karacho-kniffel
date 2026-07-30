@@ -18,6 +18,7 @@ import { saveGame, syncPending, importLegacyHistory, getHistory } from "./storag
 import { computeTypicalValues } from "./logic/categoryStats";
 import { keyOf } from "./logic/stats";
 import { pathForState, screenForPath, isTransientPath } from "./lib/analytics";
+import { startSessionTracking } from "./lib/geoSession";
 import Spinner from "./components/Spinner";
 import "./App.css";
 
@@ -299,6 +300,11 @@ export default function App() {
     if (!isLoggedIn || !profile || !nameConfirmed) return;
     importLegacyHistory(profile).catch(() => {});
   }, [isLoggedIn, profile, nameConfirmed]);
+
+  // Spielzeit pro Stadt (siehe lib/geoSession.js). Bewusst ohne Dependencies
+  // und ohne isLoggedIn: gezählt wird das Gerät, nicht das Konto — Gäste zählen
+  // gleichberechtigt mit.
+  useEffect(() => startSessionTracking(), []);
 
   // Offene Spiele nachschieben, sobald wieder Netz/Fokus da ist
   useEffect(() => {

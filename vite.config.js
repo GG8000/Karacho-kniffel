@@ -53,10 +53,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Vorsichtsmaßnahme: /_vercel/* sind die Analytics-Endpunkte. Der
-        // Fallback greift zwar nur bei Navigationen und die Insights-Aufrufe
-        // sind Script- bzw. Fetch-Requests — die Zeile kostet aber nichts.
-        navigateFallbackDenylist: [/^\/_vercel\//],
+        // Vorsichtsmaßnahme: /_vercel/* sind die Analytics-Endpunkte, /api/* die
+        // eigene Serverless Function. Der Fallback greift zwar nur bei
+        // Navigationen und beides sind Script- bzw. Fetch-Requests — die Zeilen
+        // kosten aber nichts.
+        navigateFallbackDenylist: [/^\/_vercel\//, /^\/api\//],
         // Der wartende SW übernimmt erst auf Knopfdruck im Modal.
         skipWaiting: false,
         clientsClaim: true,

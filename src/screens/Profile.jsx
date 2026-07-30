@@ -5,6 +5,12 @@ import { useAuth } from '../auth/AuthContext'
 import { listFriends, removeFriend } from '../auth/friends'
 import FriendCodeDialog from '../components/FriendCodeDialog'
 import Spinner from '../components/Spinner'
+import {
+  isOptedOut,
+  setOptedOut,
+  browserOptOut,
+  forgetDevice,
+} from '../lib/geoSession'
 
 export default function Profile({ onBack }) {
   const {
@@ -24,6 +30,36 @@ export default function Profile({ onBack }) {
   const [friends, setFriends] = useState([])
   const [loadingFriends, setLoadingFriends] = useState(true)
   const [addFriendOpen, setAddFriendOpen] = useState(false)
+  const [geoOn, setGeoOn] = useState(() => !isOptedOut())
+  const [forgetDialog, setForgetDialog] = useState(false)
+  const [forgetting, setForgetting] = useState(false)
+  const [forgotten, setForgotten] = useState(false)
+
+  // Setzt der Browser das Signal (DNT / Global Privacy Control), bewirkt der
+  // Schalter nichts — das muss man dann auch dazusagen.
+  const geoBlocked = browserOptOut()
+
+  function handleGeoToggle() {
+    const next = !geoOn
+    setOptedOut(!next)
+    setGeoOn(next)
+    // Das Abschalten greift erst beim nächsten App-Start: startSessionTracking()
+    // prüft nur beim Aufsetzen. Der laufende Zähler ist ohnehin schon erfasst.
+  }
+
+  async function handleForget() {
+    setForgetting(true)
+    setError(null)
+    try {
+      await forgetDevice()
+      setForgetDialog(false)
+      setForgotten(true)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setForgetting(false)
+    }
+  }
 
   function refreshFriends() {
     listFriends()
@@ -410,6 +446,138 @@ export default function Profile({ onBack }) {
               />
             )}
           </>
+        )}
+
+        {/* Datenschutz — bewusst außerhalb des isLoggedIn-Zweigs: gezählt wird
+            das Gerät, nicht das Konto, also müssen auch Gäste hier abschalten
+            können. Siehe lib/geoSession.js. */}
+        <div style={{ width: '100%', maxWidth: 340, marginTop: 8 }}>
+          <div
+            style={{
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: 12,
+              letterSpacing: 1,
+              marginBottom: 6,
+            }}
+          >
+            DATENSCHUTZ
+          </div>
+
+          <button
+            onClick={handleGeoToggle}
+            disabled={geoBlocked}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              background: 'rgba(255,255,255,0.06)',
+              border: 'none',
+              borderRadius: 12,
+              padding: '14px 16px',
+              color: 'white',
+              textAlign: 'left',
+              cursor: geoBlocked ? 'default' : 'pointer',
+              opacity: geoBlocked ? 0.5 : 1,
+            }}
+          >
+            <span style={{ flex: 1, fontSize: 15 }}>Städte-Statistik</span>
+            <span
+              style={{
+                width: 40,
+                height: 22,
+                borderRadius: 11,
+                background:
+                  geoOn && !geoBlocked ? '#673ab7' : 'rgba(255,255,255,0.15)',
+                position: 'relative',
+                flexShrink: 0,
+                transition: 'background 0.15s',
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 3,
+                  left: geoOn && !geoBlocked ? 21 : 3,
+                  width: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  background: 'white',
+                  transition: 'left 0.15s',
+                }}
+              />
+            </span>
+          </button>
+
+          <div
+            style={{
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: 12,
+              lineHeight: 1.5,
+              marginTop: 8,
+            }}
+          >
+            {geoBlocked
+              ? 'Dein Browser sendet „Do Not Track“ — es wird nichts erfasst.'
+              : 'Erfasst wird die Stadt (aus der IP-Adresse abgeleitet) und die Zeit, die in der App verbracht wird. Die IP-Adresse selbst wird nicht gespeichert, und nichts davon hängt an deinem Konto. In der Statistik erscheint eine Stadt erst, wenn mindestens drei Geräte von dort gespielt haben.'}
+          </div>
+
+          {!geoOn && !geoBlocked && (
+            <div
+              style={{
+                color: 'rgba(255,255,255,0.3)',
+                fontSize: 11,
+                marginTop: 6,
+              }}
+            >
+              Wirkt ab dem nächsten Start der App.
+            </div>
+          )}
+
+          <button
+            onClick={() => setForgetDialog(true)}
+            style={{
+              marginTop: 10,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: forgotten
+                ? 'rgba(105,255,71,0.6)'
+                : 'rgba(255,100,100,0.5)',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            {forgotten ? '✓ Gelöscht' : 'Daten dieses Geräts löschen'}
+          </button>
+        </div>
+
+        {forgetDialog && (
+          <div className="dialog-overlay">
+            <div className="dialog">
+              <div className="dialog-title">Daten dieses Geräts löschen?</div>
+              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+                Entfernt alle Sitzungen dieses Geräts aus der Städte-Statistik.
+                Deine Spiele und dein Konto bleiben unberührt.
+              </div>
+              <div className="dialog-actions">
+                <button
+                  className="btn-outline"
+                  onClick={() => setForgetDialog(false)}
+                  disabled={forgetting}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  className="btn-danger"
+                  onClick={handleForget}
+                  disabled={forgetting}
+                >
+                  {forgetting ? <Spinner row size={16} /> : 'Löschen'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {error && (

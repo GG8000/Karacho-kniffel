@@ -17,6 +17,7 @@ import { calculateUpperBalance, calculateTotal } from "./logic/calculator";
 import { saveGame, syncPending, importLegacyHistory, getHistory } from "./storage";
 import { computeTypicalValues } from "./logic/categoryStats";
 import { keyOf } from "./logic/stats";
+import { pathForState, screenForPath, isTransientPath } from "./lib/analytics";
 import Spinner from "./components/Spinner";
 import "./App.css";
 
@@ -242,6 +243,50 @@ export default function App() {
   useEffect(() => {
     refreshTypical();
   }, [isLoggedIn]);
+
+  // Hält die URL am Screen — die Grundlage der Analytics (siehe lib/analytics.js).
+  // Das Vercel-Script patcht pushState/replaceState und feuert den Seitenaufruf
+  // selbst, deshalb steht hier kein Tracking-Aufruf.
+  useEffect(() => {
+    const path = pathForState({
+      loading,
+      authLoading,
+      isLoggedIn,
+      guest,
+      profile,
+      nameConfirmed,
+      screen,
+      showResult,
+    });
+    if (!path || path === window.location.pathname) return;
+    // Auth-Screens ersetzen den Eintrag, statt einen neuen anzulegen — sowohl
+    // beim Hin- als auch beim Wegnavigieren, sonst bleiben tote /login-Einträge
+    // in der History liegen.
+    const replace =
+      isTransientPath(path) || isTransientPath(window.location.pathname);
+    window.history[replace ? "replaceState" : "pushState"]({}, "", path);
+  }, [
+    loading,
+    authLoading,
+    isLoggedIn,
+    guest,
+    profile,
+    nameConfirmed,
+    screen,
+    showResult,
+  ]);
+
+  // Zurück-Button: funktioniert dadurch erstmals in der PWA, statt die App zu
+  // schließen. Anders als goToModeSelect() wird hier bewusst nichts geleert —
+  // ein versehentliches Zurücktippen soll keinen laufenden Block wegräumen.
+  useEffect(() => {
+    function handlePop() {
+      setShowResult(false);
+      setScreen(screenForPath(window.location.pathname));
+    }
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 10000);

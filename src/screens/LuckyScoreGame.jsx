@@ -3,28 +3,13 @@ import PlayerColumn from "../components/PlayerColumn";
 import ScoreInputModal from "../components/ScoreInputModal";
 import FriendCodeDialog from "../components/FriendCodeDialog";
 import PlayerLinkButtons from "../components/PlayerLinkButtons";
+import RecentPlayersPicker from "../components/RecentPlayersPicker";
 import { useAuth } from "../auth/AuthContext";
 import { finalizeIdentities } from "../auth/identity";
 import { calculateUpperBalance, calculateTotal } from "../logic/calculator";
+import { CATEGORIES, nextCellState } from "../logic/kniffel";
+import { celebrateKniffel } from "../lib/celebrate";
 import { saveGame } from "../storage";
-
-const CATEGORIES = [
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "SUMME",
-  "3er",
-  "4er",
-  "FH",
-  "KL STR",
-  "GR STR",
-  "KNFFL",
-  "CHNC",
-  "TOTAL",
-];
 
 function refreshTotals(playerScores) {
   const now = Date.now();
@@ -66,9 +51,11 @@ export default function LuckyScoreGame({ onExit }) {
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
+  // Übernimmt einen Vorschlag ins Namensfeld. Nur ein echter Account wird
+  // vorgemerkt — aus der "schon gespielt"-Liste kommen auch reine Gastnamen.
   function prefill(p) {
     setNewName(p.display_name);
-    setPending(p);
+    setPending(p.id ? p : null);
   }
 
   function updateScore(pIdx, cIdx, value, isKniffel = false) {
@@ -80,6 +67,26 @@ export default function LuckyScoreGame({ onExit }) {
       return { ...prev, [pIdx]: refreshTotals(playerScores) };
     });
     setModal(null);
+  }
+
+  // Tap auf eine Zelle: durchklicken oder Sheet öffnen — wie im Normal-Modus.
+  function handleTap(pIdx, cIdx) {
+    const step = nextCellState(cIdx, scores[pIdx]?.[cIdx]);
+    if (!step) return;
+    if (step.kind === "sheet") {
+      setModal({ pIdx, cIdx });
+      return;
+    }
+    // Außerhalb des Updaters, sonst feuert die Feier im StrictMode doppelt.
+    if (step.kind === "set" && step.entry.isKniffel) {
+      celebrateKniffel({ kind: "upper", face: step.entry.face });
+    }
+    setScores((prev) => {
+      const playerScores = { ...prev[pIdx] };
+      if (step.kind === "set") playerScores[cIdx] = step.entry;
+      else delete playerScores[cIdx];
+      return { ...prev, [pIdx]: refreshTotals(playerScores) };
+    });
   }
 
   function removeScore(pIdx, cIdx) {
@@ -138,6 +145,9 @@ export default function LuckyScoreGame({ onExit }) {
           flexDirection: "column",
           padding: 24,
           gap: 16,
+          // Spielerliste + Vorschläge können den Screen überlaufen lassen —
+          // ohne Scroll wäre "Spieler hinzufügen" am Handy nicht erreichbar.
+          overflowY: "auto",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -215,6 +225,13 @@ export default function LuckyScoreGame({ onExit }) {
           value={newPrediction}
           onChange={(e) => setNewPrediction(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addPlayer()}
+        />
+
+        <RecentPlayersPicker
+          query={newName}
+          takenNames={players}
+          takenIds={identities}
+          onPick={prefill}
         />
 
         <PlayerLinkButtons
@@ -378,7 +395,7 @@ export default function LuckyScoreGame({ onExit }) {
               name={`${name} (${predictions[pIdx]})`}
               categories={CATEGORIES}
               playerScores={scores[pIdx] || {}}
-              onTap={(pIdx, cIdx) => setModal({ pIdx, cIdx })}
+              onTap={handleTap}
             />
           ))}
         </div>

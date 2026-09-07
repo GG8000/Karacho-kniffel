@@ -1,29 +1,75 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { celebrateKniffel } from '../lib/celebrate'
+import { WHEEL_MIN, WHEEL_MAX, kniffelFaceFor } from '../logic/kniffel'
+import PickerWheel from './PickerWheel'
 import Die from './Die'
 
-const FIX_POINTS = { 'FH': 25, 'KL STR': 30, 'GR STR': 40, 'KNFFL': 50 }
+// Sheet für die beiden Kategorien, die einen echten Wert brauchen:
+// 3er/4er/CHNC über das Auswahlrad und die Kniffel-Zeile über die Augenzahl.
+// Der obere Teil und FH/KL STR/GR STR werden direkt in der Zelle
+// durchgeklickt (siehe logic/kniffel.js nextCellState) und landen hier nicht
+// mehr.
+
+const KNIFFEL_POINTS = 50
+
+const clampSum = (n) => Math.min(WHEEL_MAX, Math.max(WHEEL_MIN, Math.round(n)))
+
+// Am Laptop gibt es eine echte Tastatur — dort lohnen sich Zahlenfeld und
+// Tastenhinweise. Am Handy bleibt das Sheet unverändert, dort wäre beides nur
+// im Weg. (pointer: fine) trennt Maus/Trackpad zuverlässiger von Touch als eine
+// Breiten-Abfrage, die am Tablet im Querformat danebenliegt.
+function useHasKeyboard() {
+  const query = '(pointer: fine)'
+  const [fine, setFine] = useState(
+    () => window.matchMedia?.(query).matches ?? false,
+  )
+
+  useEffect(() => {
+    const mq = window.matchMedia?.(query)
+    if (!mq) return
+    const onChange = (e) => setFine(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  return fine
+}
 
 export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, onClose, onSave, onDelete }) {
   const catName = categories[cIdx]
-  const isSlider = ['3er', '4er', 'CHNC'].includes(catName)
-  const isFixed = catName in FIX_POINTS
-  const isUpperDice = cIdx < 6
+  const isKniffelRow = catName === 'KNFFL'
+  const isWheel = !isKniffelRow
 
-  // Startwert des Sliders: typischer Wert dieses Spielers (falls vorhanden),
-  // sonst wie bisher 15.
+  // Startwert des Rads: typischer Wert dieses Spielers (falls vorhanden),
+  // sonst wie bisher 15. Darf beim Tippen im Zahlenfeld kurz '' sein —
+  // gerechnet wird immer mit sumValue.
   const start = defaultValue ?? 15
-  const [sliderVal, setSliderVal] = useState(start)
+  const [rawVal, setRawVal] = useState(start)
+  const [claimKniffel, setClaimKniffel] = useState(false)
+
+  const hasKeyboard = useHasKeyboard()
+  const numberRef = useRef(null)
+
+  const typed = rawVal === '' ? null : Number(rawVal)
+  const sumValue = clampSum(Number.isFinite(typed) ? typed : start)
+
+  // Ein Kniffel ist nur möglich, wenn die Summe fünf gleiche Würfel sein KANN.
+  const kniffelFace = isWheel ? kniffelFaceFor(sumValue) : null
+  const claimed = Boolean(kniffelFace) && claimKniffel
 
   useEffect(() => {
-    setSliderVal(start)
+    setRawVal(start)
+    setClaimKniffel(false)
   }, [cIdx, start])
 
-
-  const isKniffelRow = catName === 'KNFFL'
+  // Rutscht das Rad auf einen Wert, der kein Kniffel sein kann, verfällt das
+  // Häkchen — sonst bliebe es unsichtbar gesetzt.
+  useEffect(() => {
+    if (!kniffelFace) setClaimKniffel(false)
+  }, [kniffelFace])
 
   // Speichert und feuert bei einem Kniffel zusätzlich die Feier ab. Läuft für
-  // alle Spielmodi, weil sie sich dieses Modal teilen. face wandert nur im
+  // alle Spielmodi, weil sie sich dieses Sheet teilen. face wandert nur im
   // Normal-Modus bis in die Statistik — die anderen Modi speichern kein
   // Kategorie-Raster, dort treibt sie nur die Animation.
   function save(value, isKniffel, face = null) {
@@ -31,11 +77,65 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, 
     onSave(value, isKniffel, face)
   }
 
-  const diceButtons = Array.from({ length: 6 }, (_, index) => {
-    const label = index === 0 ? 'X' : `${index}x`
-    const val = index === 0 ? -((cIdx + 1) * 3) : (index - 3) * (cIdx + 1)
-    return { label, val }
-  })
+  function confirmWheel() {
+    save(sumValue, claimed, claimed ? kniffelFace : null)
+  }
+
+  // Zahlenfeld beim Öffnen scharf stellen und den Wert markieren, damit die
+  // erste getippte Ziffer ihn ersetzt statt sich anzuhängen.
+  useEffect(() => {
+    if (isWheel && hasKeyboard) numberRef.current?.select()
+  }, [cIdx, isWheel, hasKeyboard])
+
+  // Tastatur-Eingabe am Laptop. Der Handler hängt am document, weil beim Öffnen
+  // noch nichts im Sheet den Fokus hat.
+  useEffect(() => {
+    function onKey(e) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+        return
+      }
+
+      if (isWheel) {
+        // Ziffern gehören ins Zahlenfeld, Pfeiltasten ins Rad — hier nur
+        // bestätigen.
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          confirmWheel()
+        }
+        return
+      }
+
+      // Kniffel-Zeile: Augenzahl direkt tippen, 0 streicht.
+      const digit = /^[0-9]$/.test(e.key) ? Number(e.key) : null
+      if (digit === 0) {
+        e.preventDefault()
+        onSave(0, false)
+        return
+      }
+      if (digit === null || digit > 6) return
+      e.preventDefault()
+      save(KNIFFEL_POINTS, true, digit)
+    }
+
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [pIdx, cIdx, isWheel, sumValue, claimed, kniffelFace])
+
+  const keyHint = isWheel ? (
+    <>
+      <kbd>↑</kbd><kbd>↓</kbd> wählt · <kbd>Enter</kbd> bestätigt ·{' '}
+      <kbd>Esc</kbd> schließt
+    </>
+  ) : (
+    <>
+      <kbd>1</kbd>–<kbd>6</kbd> = Augenzahl · <kbd>0</kbd> = Streichen ·{' '}
+      <kbd>Esc</kbd> schließt
+    </>
+  )
 
   return (
     <div
@@ -57,34 +157,83 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, 
         gap: 16,
       }}>
 
-        {isSlider ? (
+        {isWheel ? (
           <>
             <div style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>
-              {catName}: {sliderVal} Punkte
+              {catName}: {sumValue} Punkte
             </div>
-            <input
-              type="range"
-              min={5} max={30} step={1}
-              value={sliderVal}
-              onChange={e => setSliderVal(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#673ab7', height: 4 }}
+
+            <PickerWheel
+              min={WHEEL_MIN}
+              max={WHEEL_MAX}
+              value={sumValue}
+              onChange={(n) => setRawVal(n)}
             />
+
+            {/* Kniffel-Rückfrage — nur wenn die Summe fünf gleiche Würfel sein
+                kann (Vielfaches von 5 im Radbereich). */}
+            {kniffelFace && (
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  padding: '10px 12px',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  border: claimed
+                    ? '1px solid rgba(255,196,0,0.7)'
+                    : '1px solid rgba(255,255,255,0.12)',
+                  background: claimed ? 'rgba(255,196,0,0.12)' : 'transparent',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={claimed}
+                  onChange={(e) => setClaimKniffel(e.target.checked)}
+                  style={{ width: 18, height: 18, accentColor: '#ffc400' }}
+                />
+                <span style={{ fontSize: 15 }}>5 ×</span>
+                <Die face={kniffelFace} size={22} />
+                <span style={{ fontSize: 15, fontWeight: 'bold' }}>= Kniffel!</span>
+              </label>
+            )}
+
+            {hasKeyboard && (
+              <input
+                ref={numberRef}
+                className="dialog-input"
+                type="number"
+                inputMode="numeric"
+                min={WHEEL_MIN} max={WHEEL_MAX} step={1}
+                value={rawVal}
+                onChange={e => setRawVal(e.target.value)}
+                // Der Wert wird erst beim Verlassen eingefangen, damit man beim
+                // Tippen zwischendurch leeren darf.
+                onBlur={() => setRawVal(sumValue)}
+                style={{ textAlign: 'center', fontSize: 18 }}
+              />
+            )}
+
             {defaultValue != null && (
               <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
                 ≈ dein typischer Wert
               </div>
             )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button className="btn-delete" onClick={onDelete}>
                 🗑 Löschen
               </button>
               <button className="btn-delete" onClick={() => onSave(0, false)}>
-                ❌ Streichen 
+                ❌ Streichen
               </button>
-              <button className="btn-primary" onClick={() => onSave(sliderVal, false)}>
+              <button className="btn-primary" onClick={confirmWheel}>
                 Bestätigen
               </button>
             </div>
+            {hasKeyboard && <div className="key-hint">{keyHint}</div>}
           </>
         ) : (
           <>
@@ -92,79 +241,51 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, 
               Eintrag für {catName}
             </div>
 
-            {isUpperDice ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-                {diceButtons.map(({ label, val }, index) => (
-                  <button
-                    key={label}
-                    className="btn-grid-item"
-                    onClick={() =>                          // ← 5x = automatisch Kniffel
-                      save(val, index === 5, index === 5 ? cIdx + 1 : null)
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            ) : isKniffelRow ? (
-              // Kniffel-Zeile: die Augenzahl wird direkt angetippt. Ein Tap wie
-              // vorher beim OK-Button, liefert aber die Daten für die Statistik.
-              <>
-                <div
+            {/* Kniffel-Zeile: die Augenzahl wird direkt angetippt. Ein Tap wie
+                vorher beim OK-Button, liefert aber die Daten für die Statistik. */}
+            <div
+              style={{
+                textAlign: 'center',
+                color: 'rgba(255,255,255,0.55)',
+                fontSize: 14,
+              }}
+            >
+              Welchen Kniffel?
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 12,
+                justifyItems: 'center',
+              }}
+            >
+              {[1, 2, 3, 4, 5, 6].map((face) => (
+                <button
+                  key={face}
+                  aria-label={`Kniffel mit ${face}`}
+                  onClick={() => save(KNIFFEL_POINTS, true, face)}
                   style={{
-                    textAlign: 'center',
-                    color: 'rgba(255,255,255,0.55)',
-                    fontSize: 14,
+                    background: 'none',
+                    border: 'none',
+                    padding: 4,
+                    cursor: 'pointer',
+                    lineHeight: 0,
                   }}
                 >
-                  Welchen Kniffel?
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: 12,
-                    justifyItems: 'center',
-                  }}
-                >
-                  {[1, 2, 3, 4, 5, 6].map((face) => (
-                    <button
-                      key={face}
-                      aria-label={`Kniffel mit ${face}`}
-                      onClick={() => save(FIX_POINTS[catName], true, face)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        padding: 4,
-                        cursor: 'pointer',
-                        lineHeight: 0,
-                      }}
-                    >
-                      <Die face={face} size="min(17vw, 62px)" />
-                    </button>
-                  ))}
-                </div>
-                <button
-                  className="btn-grid-item"
-                  onClick={() => onSave(0, false)}
-                  style={{ alignSelf: 'center' }}
-                >
-                  Streichen
+                  <Die face={face} size="min(17vw, 62px)" />
                 </button>
-              </>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-evenly' }}>
-                <button
-                  className="btn-primary"
-                  onClick={() => save(FIX_POINTS[catName], false)}
-                >
-                  OK
-                </button>
-                <button className="btn-grid-item" onClick={() => onSave(0, false)}>
-                  Streichen
-                </button>
-              </div>
-            )}
+              ))}
+            </div>
+            <button
+              className="btn-grid-item"
+              onClick={() => onSave(0, false)}
+              style={{ alignSelf: 'center' }}
+            >
+              Streichen
+            </button>
+
+            {hasKeyboard && <div className="key-hint">{keyHint}</div>}
 
             <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />
             <button className="btn-delete" onClick={onDelete} style={{ alignSelf: 'flex-start' }}>

@@ -9,10 +9,21 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-// Ohne VITE_-Präfix — diese beiden dürfen nie im Client-Bundle landen und
-// gehören ausschließlich in die Vercel-Env-Vars.
-const DB_URL = process.env.SUPABASE_URL
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Die Projekt-URL ist kein Geheimnis — die steht ohnehin im Client-Bundle.
+// Deshalb VITE_SUPABASE_URL als Rückfall: eine Variable weniger, die man im
+// Dashboard falsch eintragen kann. .trim(), weil beim Einfügen gern ein
+// Zeilenumbruch mitkommt.
+const DB_URL = (
+  process.env.SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  ''
+).trim()
+
+// Der Service-Key dagegen MUSS ohne VITE_-Präfix gesetzt sein und darf nie im
+// Client-Bundle landen. Bewusst kein Rückfall auf den anon-Key: der liefe als
+// Rolle anon und scheiterte am revoke auf record_session — mit einer Fehlermeldung,
+// die viel schwerer zu deuten wäre als "Key fehlt".
+const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -56,9 +67,21 @@ export default async function handler(req, res) {
     return res.status(405).end()
   }
   if (!DB_URL || !SERVICE_KEY) {
-    console.error('session: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY fehlen')
+    console.error(
+      'session: Konfiguration fehlt —' +
+        ` URL:${DB_URL ? 'ok' : 'FEHLT'} KEY:${SERVICE_KEY ? 'ok' : 'FEHLT'}`,
+    )
     // Nach außen still: der Client kann daran nichts ändern und soll deswegen
     // nicht in eine Fehlerbehandlung laufen.
+    return res.status(204).end()
+  }
+  // createClient() wirft bei einer kaputten URL mit einem Stacktrace, der nicht
+  // verrät, welche Variable gemeint ist. Lieber vorher eine klare Zeile.
+  if (!/^https?:\/\//.test(DB_URL)) {
+    console.error(
+      `session: URL ist keine HTTP(S)-Adresse (beginnt mit "${DB_URL.slice(0, 12)}…").` +
+        ' Erwartet wird die Project-URL, nicht die Datenbank-Connection-String.',
+    )
     return res.status(204).end()
   }
 

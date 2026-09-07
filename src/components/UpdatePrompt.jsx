@@ -4,9 +4,12 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
 // Wie oft im Vordergrund beim Server nachgefragt wird, ob ein neuer Build da ist.
 const CHECK_INTERVAL = 60 * 1000
 
-// Falls das controllerchange-Event ausbleibt (kommt auf iOS vor), laden wir
-// nach dieser Zeit selbst neu.
-const RELOAD_FALLBACK = 3000
+// Notnagel, falls controllerchange ganz ausbleibt. Bewusst großzügig: der neue
+// Worker muss erst aktivieren und cleanupOutdatedCaches() durchlaufen. Wird zu
+// früh neu geladen, liefert noch der ALTE Worker die Seite aus — die App bleibt
+// auf dem alten Stand, der neue Worker hängt weiter im Wartestand und meldet
+// sich beim nächsten Start wieder. Genau das war der Fehler mit 3 Sekunden.
+const RELOAD_FALLBACK = 12000
 
 // Zeigt ein Modal, sobald ein neuer Build bereitsteht. Der Service Worker
 // wartet dabei im Hintergrund — erst der Knopfdruck übernimmt ihn und lädt neu,
@@ -50,11 +53,29 @@ export default function UpdatePrompt() {
 
   async function applyUpdate() {
     setBusy(true)
-    setTimeout(() => window.location.reload(), RELOAD_FALLBACK)
+
+    let reloaded = false
+    const reload = () => {
+      if (reloaded) return
+      reloaded = true
+      window.location.reload()
+    }
+
+    // Verlässliches Signal ist die Übernahme durch den neuen Worker, nicht ein
+    // fester Timer: updateServiceWorker() schickt nur SKIP_WAITING und kehrt
+    // sofort zurück, die Aktivierung läuft danach noch. clientsClaim() ist in
+    // vite.config.js gesetzt, controllerchange kommt also zuverlässig, sobald
+    // der neue Worker wirklich das Sagen hat.
+    navigator.serviceWorker?.addEventListener('controllerchange', reload, {
+      once: true,
+    })
+    const fallback = setTimeout(reload, RELOAD_FALLBACK)
+
     try {
       await updateServiceWorker(true)
     } catch {
-      window.location.reload()
+      clearTimeout(fallback)
+      reload()
     }
   }
 

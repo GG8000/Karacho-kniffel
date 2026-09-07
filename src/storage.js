@@ -103,6 +103,7 @@ export function onSaveEvent(cb) {
 }
 
 function emitSaved() {
+  knownPlayersCache = null // frisch gespielte Namen gehören sofort in die Liste
   for (const cb of saveListeners) cb()
 }
 
@@ -279,6 +280,7 @@ export async function getPlayerStats() {
 
 export function clearHistory() {
   localStorage.removeItem(CACHE_KEY)
+  knownPlayersCache = null
 }
 
 // --- Einmaliger Import der alten localStorage-Historie ----------------------
@@ -345,4 +347,68 @@ export async function importLegacyHistory(profile) {
     // später
   }
   return imported.length
+}
+
+// --- Schon-gespielt-Vorschläge ---------------------------------------------
+
+// Die Vorschlagsliste wird beim Anlegen jedes Spielers neu gemountet, und
+// getHistory() holt jedes Mal die komplette game_players-Tabelle. Beim Aufbau
+// einer Runde wäre das ein Fetch pro Spieler — deshalb das Promise kurz
+// festhalten. emitSaved() wirft den Cache weg, sobald ein Spiel dazukommt.
+let knownPlayersCache = null
+const KNOWN_PLAYERS_TTL = 60_000
+
+// Alle Namen, mit denen auf diesem Konto/Gerät schon gespielt wurde — zuletzt
+// gespielte zuerst. Basis für die Vorschlagsliste beim Anlegen eines Spielers.
+// Zusammengefasst wird über keyOf(), also Account-Spieler über ihre profileId
+// und Gäste über den kleingeschriebenen Namen — sonst stünde derselbe Mensch
+// mehrfach in der Liste.
+export async function getKnownPlayers() {
+  if (knownPlayersCache && Date.now() - knownPlayersCache.at < KNOWN_PLAYERS_TTL) {
+    return knownPlayersCache.promise
+  }
+  const promise = buildKnownPlayers()
+  knownPlayersCache = { at: Date.now(), promise }
+  // Ein fehlgeschlagener Versuch darf sich nicht eine Minute lang festsetzen.
+  promise.catch(() => {
+    if (knownPlayersCache?.promise === promise) knownPlayersCache = null
+  })
+  return promise
+}
+
+async function buildKnownPlayers() {
+  const games = await getHistory()
+  const byKey = new Map()
+
+  for (const game of games) {
+    const playedAt = Date.parse(game.playedAt ?? '') || 0
+    for (const p of game.participants ?? []) {
+      const name = (p.name ?? '').trim()
+      if (!name) continue
+
+      const key = keyOf(p)
+      const known = byKey.get(key)
+      if (!known) {
+        byKey.set(key, {
+          key,
+          name,
+          profileId: p.profileId ?? null,
+          games: 1,
+          lastPlayed: playedAt,
+        })
+        continue
+      }
+      known.games++
+      // Die Schreibweise des jüngsten Spiels gewinnt — Gäste tippen ihren Namen
+      // jedes Mal neu, und der letzte Stand ist der wahrscheinlichste.
+      if (playedAt > known.lastPlayed) {
+        known.lastPlayed = playedAt
+        known.name = name
+      }
+    }
+  }
+
+  return [...byKey.values()].sort(
+    (a, b) => b.lastPlayed - a.lastPlayed || b.games - a.games,
+  )
 }

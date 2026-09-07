@@ -2,28 +2,18 @@ import { useState } from "react";
 import ScoreInputModal from "../components/ScoreInputModal";
 import FriendCodeDialog from "../components/FriendCodeDialog";
 import PlayerLinkButtons from "../components/PlayerLinkButtons";
+import RecentPlayersPicker from "../components/RecentPlayersPicker";
 import { useAuth } from "../auth/AuthContext";
 import { finalizeIdentities } from "../auth/identity";
 import { calculateUpperBalance, calculateTotal } from "../logic/calculator";
+import {
+  CATEGORIES as CATS_NORMAL,
+  PLAYABLE_INDICES,
+  formatCell,
+  nextCellState,
+} from "../logic/kniffel";
+import { celebrateKniffel } from "../lib/celebrate";
 import { saveGame } from "../storage";
-
-const CATS_NORMAL = [
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "SUMME",
-  "3er",
-  "4er",
-  "FH",
-  "KL STR",
-  "GR STR",
-  "KNFFL",
-  "CHNC",
-  "TOTAL",
-];
 
 function refreshTotals(playerScores) {
   const now = Date.now();
@@ -34,27 +24,36 @@ function refreshTotals(playerScores) {
   };
 }
 
-function nextAllowedTopDown(playerScores) {
-  for (let i = 0; i <= 14; i++) {
-    if (i === 6 || i === 14) continue;
-    if (!playerScores[i]) return i;
+// Welche Zellen eines Blocks angetippt werden dürfen.
+//
+// direction 'down' / 'up' erzwingen die Reihenfolge, 'free' lässt alles zu.
+// Editierbar ist neben der nächsten freien Zelle immer auch die ZULETZT
+// gefüllte: seit die Zellen durchgeklickt werden, wäre eine Zelle sonst nach
+// dem ersten Tap ("0 Würfel") sofort gesperrt und nicht mehr korrigierbar.
+function blockAccess(playerScores, direction) {
+  if (direction === "free") {
+    return { next: null, editable: new Set(PLAYABLE_INDICES) };
   }
-  return null;
-}
+  const order =
+    direction === "up" ? [...PLAYABLE_INDICES].reverse() : PLAYABLE_INDICES;
 
-function nextAllowedBottomUp(playerScores) {
-  for (let i = 14; i >= 0; i--) {
-    if (i === 6 || i === 14) continue;
-    if (!playerScores[i]) return i;
+  const pos = order.findIndex((ci) => !playerScores[ci]);
+  const editable = new Set();
+  if (pos === -1) {
+    // Block voll — nur die zuletzt gefüllte Zelle bleibt korrigierbar.
+    editable.add(order[order.length - 1]);
+    return { next: null, editable };
   }
-  return null;
+  editable.add(order[pos]);
+  if (pos > 0) editable.add(order[pos - 1]);
+  return { next: order[pos], editable };
 }
 
 function BlockColumn({
   label,
   categories,
   playerScores,
-  nextAllowed,
+  access,
   onTap,
   pIdx,
 }) {
@@ -85,8 +84,8 @@ function BlockColumn({
         const realIdx = CATS_NORMAL.indexOf(cat);
         const entry = playerScores[realIdx];
         const isAuto = realIdx === 6 || realIdx === 14;
-        const isNext = realIdx === nextAllowed;
-        const isClickable = !isAuto && isNext;
+        const isNext = realIdx === access.next;
+        const isClickable = !isAuto && access.editable.has(realIdx);
 
         return (
           <div
@@ -114,13 +113,15 @@ function BlockColumn({
               boxSizing: "border-box", // ← NEU
             }}
           >
-            {entry
-              ? realIdx >= 7 || entry.value < 0
+            {isAuto
+              ? entry
                 ? entry.value
-                : `+${entry.value}`
-              : isNext
-                ? "→"
-                : "-"}
+                : ""
+              : entry
+                ? formatCell(realIdx, entry)
+                : isNext
+                  ? "→"
+                  : ""}
           </div>
         );
       })}
@@ -140,6 +141,11 @@ export default function KniffelExtrem({ onExit }) {
   const [scores, setScores] = useState({});
   const [modal, setModal] = useState(null);
   const [restartDialog, setRestartDialog] = useState(false);
+  const [saving, setSaving] = useState(false); // sperrt die Speichern-Buttons
+
+  // Leere Blöcke für eine Runde — beim Anlegen eines Spielers und bei der
+  // Revanche dieselbe Form.
+  const emptyBlocks = () => ({ topDown: {}, bottomUp: {}, normal: {} });
 
   function addPlayer() {
     const name = newName.trim();
@@ -147,17 +153,16 @@ export default function KniffelExtrem({ onExit }) {
     const idx = players.length;
     setPlayers((prev) => [...prev, name]);
     setIdentities((prev) => [...prev, pending?.id ?? null]);
-    setScores((prev) => ({
-      ...prev,
-      [idx]: { topDown: {}, bottomUp: {}, normal: {} },
-    }));
+    setScores((prev) => ({ ...prev, [idx]: emptyBlocks() }));
     setNewName("");
     setPending(null);
   }
 
+  // Übernimmt einen Vorschlag ins Namensfeld. Nur ein echter Account wird
+  // vorgemerkt — aus der "schon gespielt"-Liste kommen auch reine Gastnamen.
   function prefill(p) {
     setNewName(p.display_name);
-    setPending(p);
+    setPending(p.id ? p : null);
   }
 
   function updateScore(pIdx, block, cIdx, value, isKniffel = false) {
@@ -172,6 +177,30 @@ export default function KniffelExtrem({ onExit }) {
       };
     });
     setModal(null);
+  }
+
+  // Tap auf eine Zelle: durchklicken oder Sheet öffnen. Wie im Normal-Modus,
+  // nur mit dem Block als zusätzlicher Ebene.
+  function handleTap(pIdx, block, cIdx) {
+    const step = nextCellState(cIdx, scores[pIdx][block][cIdx]);
+    if (!step) return;
+    if (step.kind === "sheet") {
+      setModal({ pIdx, cIdx, block });
+      return;
+    }
+    // Außerhalb des Updaters, sonst feuert die Feier im StrictMode doppelt.
+    if (step.kind === "set" && step.entry.isKniffel) {
+      celebrateKniffel({ kind: "upper", face: step.entry.face });
+    }
+    setScores((prev) => {
+      const blockScores = { ...prev[pIdx][block] };
+      if (step.kind === "set") blockScores[cIdx] = step.entry;
+      else delete blockScores[cIdx];
+      return {
+        ...prev,
+        [pIdx]: { ...prev[pIdx], [block]: refreshTotals(blockScores) },
+      };
+    });
   }
 
   function removeScore(pIdx, block, cIdx) {
@@ -201,8 +230,7 @@ export default function KniffelExtrem({ onExit }) {
     setShowResult(true);
   }
 
-  // Speichern + beenden
-  async function handleSaveAndExit() {
+  function buildGamePayload() {
     const totals = players.map((_, pIdx) => getTotal(pIdx));
     const max = Math.max(...totals);
     const kniffelCounts = players.map((_, pIdx) => {
@@ -213,15 +241,42 @@ export default function KniffelExtrem({ onExit }) {
         0,
       );
     });
-    await saveGame({
+    return {
       mode: "extrem",
       players,
       identities: finalizeIdentities(players, identities, profile),
       finalScores: totals,
       isWinners: totals.map((t) => t === max),
       kniffelCounts,
-    });
-    onExit();
+    };
+  }
+
+  // Speichern + beenden
+  async function handleSaveAndExit() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await saveGame(buildGamePayload());
+      onExit();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Revanche: speichert das beendete Spiel und startet dieselbe Runde neu —
+  // Spieler und verknüpfte Accounts bleiben, nur die drei Blöcke werden leer.
+  async function handleRepeat() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await saveGame(buildGamePayload());
+      setScores(
+        Object.fromEntries(players.map((_, i) => [i, emptyBlocks()])),
+      );
+      setShowResult(false);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleRestart() {
@@ -245,6 +300,9 @@ export default function KniffelExtrem({ onExit }) {
           flexDirection: "column",
           padding: 24,
           gap: 16,
+          // Spielerliste + Vorschläge können den Screen überlaufen lassen —
+          // ohne Scroll wäre "Spieler hinzufügen" am Handy nicht erreichbar.
+          overflowY: "auto",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -309,6 +367,13 @@ export default function KniffelExtrem({ onExit }) {
           }}
           onKeyDown={(e) => e.key === "Enter" && addPlayer()}
           autoFocus
+        />
+
+        <RecentPlayersPicker
+          query={newName}
+          takenNames={players}
+          takenIds={identities}
+          onPick={prefill}
         />
 
         <PlayerLinkButtons
@@ -413,13 +478,32 @@ export default function KniffelExtrem({ onExit }) {
           Fehler eingetragen?
         </div>
 
-        <div style={{ display: "flex", gap: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
           {/* Zurück zum Spiel ohne zu speichern */}
           <button className="btn-outline" onClick={() => setShowResult(false)}>
             ✏️ Korrektur
           </button>
+          {/* Nochmal — speichert und startet dieselbe Runde neu */}
+          <button
+            className="btn-outline"
+            onClick={handleRepeat}
+            disabled={saving}
+          >
+            🔁 Nochmal
+          </button>
           {/* Speichern + Menü */}
-          <button className="btn-primary" onClick={handleSaveAndExit}>
+          <button
+            className="btn-primary"
+            onClick={handleSaveAndExit}
+            disabled={saving}
+          >
             Weiter →
           </button>
         </div>
@@ -483,8 +567,9 @@ export default function KniffelExtrem({ onExit }) {
         <div className="players-area">
           {players.map((name, pIdx) => {
             const s = scores[pIdx];
-            const nextTD = nextAllowedTopDown(s.topDown);
-            const nextBU = nextAllowedBottomUp(s.bottomUp);
+            const accessTD = blockAccess(s.topDown, "down");
+            const accessBU = blockAccess(s.bottomUp, "up");
+            const accessFree = blockAccess(s.normal, "free");
 
             return (
               <div
@@ -512,30 +597,24 @@ export default function KniffelExtrem({ onExit }) {
                     pIdx={pIdx}
                     categories={CATS_NORMAL}
                     playerScores={s.topDown}
-                    nextAllowed={nextTD}
-                    onTap={(p, c) =>
-                      setModal({ pIdx: p, cIdx: c, block: "topDown" })
-                    }
+                    access={accessTD}
+                    onTap={(p, c) => handleTap(p, "topDown", c)}
                   />
                   <BlockColumn
                     label="↑"
                     pIdx={pIdx}
                     categories={CATS_NORMAL}
                     playerScores={s.bottomUp}
-                    nextAllowed={nextBU}
-                    onTap={(p, c) =>
-                      setModal({ pIdx: p, cIdx: c, block: "bottomUp" })
-                    }
+                    access={accessBU}
+                    onTap={(p, c) => handleTap(p, "bottomUp", c)}
                   />
                   <BlockColumn
                     label="~"
                     pIdx={pIdx}
                     categories={CATS_NORMAL}
                     playerScores={s.normal}
-                    nextAllowed={null}
-                    onTap={(p, c) =>
-                      setModal({ pIdx: p, cIdx: c, block: "normal" })
-                    }
+                    access={accessFree}
+                    onTap={(p, c) => handleTap(p, "normal", c)}
                   />
                 </div>
               </div>

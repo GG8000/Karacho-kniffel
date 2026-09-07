@@ -8,9 +8,12 @@
 //  2. Oberer Teil: fünf gleiche Würfel sind ebenfalls ein Kniffel. Die Augenzahl
 //     steckt dort schon im Kategorie-Index und lässt sich über decodeCell()
 //     RÜCKWIRKEND aus allen bisherigen Spielen rekonstruieren.
+//  3. 3er/4er/Chance: eine Summe von 5/10/…/30 KANN aus fünf gleichen Würfeln
+//     stammen. Das Sheet fragt in dem Fall nach; nur mit gesetztem Häkchen
+//     stehen isKniffel und face in der Zelle.
 
 import { keyOf } from './stats'
-import { decodeCell, UPPER_INDICES } from './categoryStats'
+import { decodeCell, UPPER_INDICES, SLIDER_INDICES } from './categoryStats'
 
 const KNIFFEL_INDEX = 12
 
@@ -20,6 +23,7 @@ function emptyEntry() {
     faces: [0, 0, 0, 0, 0, 0], // Index 0 = Augenzahl 1
     fromRow: 0,
     fromUpper: 0,
+    fromSlider: 0,
     unknown: 0, // Kniffel-Zeile ohne getippte Augenzahl
   }
 }
@@ -53,6 +57,21 @@ function accumulate(entry, cells) {
     if (decodeCell(ci, cell.value ?? 0).metric === 5) {
       addFace(entry, ci + 1)
       entry.fromUpper++
+    }
+  }
+
+  // 3. 3er/4er/Chance: dort wird im Sheet nachgefragt, ob die Summe ein Kniffel
+  // war. Ohne Häkchen steht kein face drin — dann war es keiner.
+  for (const ci of SLIDER_INDICES) {
+    const cell = cells[ci]
+    if (cell == null || !cell.isKniffel) continue
+    const face = cell.face
+    if (Number.isInteger(face) && face >= 1 && face <= 6) {
+      addFace(entry, face)
+      entry.fromSlider++
+    } else {
+      entry.total++
+      entry.unknown++
     }
   }
 }

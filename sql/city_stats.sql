@@ -65,10 +65,15 @@ as $$
         updated_at     = now();
 $$;
 
--- Nur die Function (service_role) darf schreiben, nicht der Browser.
+-- Nur die Function (service_role) darf schreiben, nicht der Browser. Beide
+-- Rechte explizit setzen und sich nicht auf das PUBLIC-Default verlassen —
+-- sonst hängt es davon ab, wie Supabase die Default-Privilegien konfiguriert.
 revoke execute on function public.record_session(
   uuid, text, text, text, text, double precision, double precision, integer
-) from anon, authenticated;
+) from public, anon, authenticated;
+grant execute on function public.record_session(
+  uuid, text, text, text, text, double precision, double precision, integer
+) to service_role;
 
 
 -- Löschrecht (DSGVO Art. 17) ---------------------------------------------------
@@ -82,7 +87,8 @@ as $$
   delete from app_sessions where device_id = p_device;
 $$;
 
-revoke execute on function public.forget_device(text) from anon, authenticated;
+revoke execute on function public.forget_device(text) from public, anon, authenticated;
+grant execute on function public.forget_device(text) to service_role;
 
 
 -- Lesepfad ---------------------------------------------------------------------

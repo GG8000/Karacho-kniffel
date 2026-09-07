@@ -11,9 +11,16 @@ import OnlineLobby from "./screens/OnlineLobby";
 import ProfileSetup, { NAME_CONFIRMED_KEY } from "./screens/ProfileSetup";
 import FriendCodeDialog from "./components/FriendCodeDialog";
 import PlayerLinkButtons from "./components/PlayerLinkButtons";
+import RecentPlayersPicker from "./components/RecentPlayersPicker";
 import { useAuth } from "./auth/AuthContext";
 import { finalizeIdentities } from "./auth/identity";
 import { calculateUpperBalance, calculateTotal } from "./logic/calculator";
+import {
+  CATEGORIES,
+  PLAYABLE_INDICES,
+  nextCellState,
+} from "./logic/kniffel";
+import { celebrateKniffel } from "./lib/celebrate";
 import { saveGame, syncPending, importLegacyHistory, getHistory } from "./storage";
 import { computeTypicalValues } from "./logic/categoryStats";
 import { keyOf } from "./logic/stats";
@@ -21,8 +28,6 @@ import { pathForState, screenForPath, isTransientPath } from "./lib/analytics";
 import { startSessionTracking } from "./lib/geoSession";
 import Spinner from "./components/Spinner";
 import "./App.css";
-
-const PLAYABLE_INDICES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13];
 
 function isGameComplete(players, scores) {
   return (
@@ -32,24 +37,6 @@ function isGameComplete(players, scores) {
     )
   );
 }
-
-const CATEGORIES = [
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "SUMME",
-  "3er",
-  "4er",
-  "FH",
-  "KL STR",
-  "GR STR",
-  "KNFFL",
-  "CHNC",
-  "TOTAL",
-];
 
 function refreshTotals(playerScores) {
   const now = Date.now();
@@ -233,6 +220,7 @@ export default function App() {
   const [gameComplete, setGameComplete] = useState(false); // NEU: ersetzt resultScreen
   const [showResult, setShowResult] = useState(false); // NEU: trennt "fertig" von "Auswertung sichtbar"
   const [typical, setTypical] = useState({}); // typische Slider-Werte je Spieler
+  const [saving, setSaving] = useState(false); // sperrt die Speichern-Buttons
   const inputRef = useRef(null);
 
   // Typische Werte aus der Historie laden — Grundlage der smarten Slider-Defaults.
@@ -337,6 +325,37 @@ export default function App() {
     setModal(null);
   }
 
+  // Tap auf eine Zelle: oberer Teil und feste Punktzahlen klicken direkt durch,
+  // 3er/4er/CHNC und die Kniffel-Zeile öffnen das Sheet.
+  function handleTap(pIdx, cIdx) {
+    const step = nextCellState(cIdx, scores[pIdx]?.[cIdx]);
+    if (!step) return;
+    if (step.kind === "sheet") {
+      setModal({ pIdx, cIdx });
+      return;
+    }
+    // Die Feier bewusst VOR setScores und außerhalb des Updaters: React ruft
+    // den Updater im StrictMode doppelt auf, die Animation liefe sonst zweimal.
+    if (step.kind === "set" && step.entry.isKniffel) {
+      celebrateKniffel({ kind: "upper", face: step.entry.face });
+    }
+    setScores((prev) => {
+      const playerScores = { ...prev[pIdx] };
+      if (step.kind === "set") playerScores[cIdx] = step.entry;
+      else delete playerScores[cIdx];
+      const updated = { ...prev, [pIdx]: refreshTotals(playerScores) };
+      if (isGameComplete(players, updated)) {
+        setTimeout(() => {
+          setGameComplete(true);
+          setShowResult(true);
+        }, 300);
+      } else {
+        setGameComplete(false);
+      }
+      return updated;
+    });
+  }
+
   function removeScore(pIdx, cIdx) {
     setScores((prev) => {
       const playerScores = { ...prev[pIdx] };
@@ -360,9 +379,12 @@ export default function App() {
     setAddDialog(false);
   }
 
+  // Übernimmt einen Vorschlag ins Namensfeld. Nur ein echter Account wird
+  // vorgemerkt — aus der "schon gespielt"-Liste kommen auch reine Gastnamen,
+  // die keiner Identität entsprechen.
   function prefill(p) {
     setNewName(p.display_name);
-    setPending(p);
+    setPending(p.id ? p : null);
   }
 
   // NEU: Spieler entfernen — reindiziert alle Scores danach
@@ -440,22 +462,52 @@ export default function App() {
 
   // Speichern + zurück zum Menü
   async function handleSaveAndExit() {
-    await saveGame(buildGamePayload());
-    refreshTypical();
-    goToModeSelect();
+    if (saving) return;
+    setSaving(true);
+    try {
+      await saveGame(buildGamePayload());
+      refreshTypical();
+      goToModeSelect();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Revanche: speichert das gerade beendete Spiel und startet sofort das
+  // nächste mit derselben Runde. Spieler und verknüpfte Accounts bleiben
+  // stehen, geleert werden nur die Punkte — das spart nach jedem Spiel das
+  // komplette Neuanlegen.
+  async function handleRepeat() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await saveGame(buildGamePayload());
+      refreshTypical();
+      setScores(Object.fromEntries(players.map((_, i) => [i, {}])));
+      setGameComplete(false);
+      setShowResult(false);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleRestart() {
-    if (players.length > 0) {
-      await saveGame(buildGamePayload());
-      refreshTypical();
+    if (saving) return;
+    setSaving(true);
+    try {
+      if (players.length > 0) {
+        await saveGame(buildGamePayload());
+        refreshTypical();
+      }
+      setPlayers([]);
+      setIdentities([]);
+      setScores({});
+      setRestartDialog(false);
+      setGameComplete(false);
+      setShowResult(false);
+    } finally {
+      setSaving(false);
     }
-    setPlayers([]);
-    setIdentities([]);
-    setScores({});
-    setRestartDialog(false);
-    setGameComplete(false);
-    setShowResult(false);
   }
 
   function goToModeSelect() {
@@ -564,13 +616,32 @@ export default function App() {
           Fehler eingetragen?
         </div>
 
-        <div style={{ display: "flex", gap: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
           {/* Korrektur — zurück ohne zu speichern */}
           <button className="btn-outline" onClick={() => setShowResult(false)}>
             ✏️ Korrektur
           </button>
+          {/* Nochmal — speichert und startet dieselbe Runde neu */}
+          <button
+            className="btn-outline"
+            onClick={handleRepeat}
+            disabled={saving}
+          >
+            🔁 Nochmal
+          </button>
           {/* Weiter — speichert und geht ins Menü */}
-          <button className="btn-primary" onClick={handleSaveAndExit}>
+          <button
+            className="btn-primary"
+            onClick={handleSaveAndExit}
+            disabled={saving}
+          >
             Weiter →
           </button>
         </div>
@@ -617,7 +688,7 @@ export default function App() {
               name={name}
               categories={CATEGORIES}
               playerScores={scores[pIdx] || {}}
-              onTap={(pIdx, cIdx) => setModal({ pIdx, cIdx })}
+              onTap={handleTap}
               onRemove={() => setRemoveDialog(pIdx)} // NEU
             />
           ))}
@@ -672,6 +743,12 @@ export default function App() {
               }}
               onKeyDown={(e) => e.key === "Enter" && handleAddPlayer()}
               autoFocus
+            />
+            <RecentPlayersPicker
+              query={newName}
+              takenNames={players}
+              takenIds={identities}
+              onPick={prefill}
             />
             <PlayerLinkButtons
               profile={profile}

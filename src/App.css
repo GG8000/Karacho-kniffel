@@ -184,6 +184,10 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* Der Spieler-Dialog kann durch die Vorschlagsliste hoch werden — dann lieber
+     scrollen als die Buttons aus dem Bild schieben. */
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .dialog-title {
@@ -369,4 +373,164 @@ html, body, #root {
   .kniffel-overlay * {
     animation: none !important;
   }
+}
+
+/* --- Vorschlagsliste "schon gespielt" (RecentPlayersPicker.jsx) ----------- */
+.recent-players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recent-players-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.recent-players-toggle:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.recent-players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* Vier Zeilen sind sichtbar, der Rest wird gescrollt — sonst schiebt eine
+     lange Historie die Buttons aus dem Dialog. */
+  max-height: 168px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.recent-players-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 15px;
+  padding: 9px 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.recent-players-item:hover,
+.recent-players-item:active {
+  background: rgba(103, 58, 183, 0.35);
+}
+
+.recent-players-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-players-count {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* Tastatur-Hinweise im ScoreInputModal — nur am Laptop sichtbar. */
+.key-hint {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12px;
+}
+
+.key-hint kbd {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: inherit;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* --- Auswahlrad (components/PickerWheel.jsx) ------------------------------ */
+.wheel {
+  position: relative;
+  width: 100%;
+  outline: none;
+  /* Maskiert oben und unten weich aus, damit das Rad gewölbt wirkt. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 22%,
+    #000 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 22%,
+    #000 78%,
+    transparent 100%
+  );
+}
+
+.wheel:focus-visible .wheel-band {
+  border-color: #b388ff;
+}
+
+.wheel-list {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  /* Ohne contain scrollt das Sheet bzw. die Seite dahinter mit. */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none;
+}
+
+.wheel-list::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel-item {
+  flex-shrink: 0;
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wheel-value {
+  font-size: 26px;
+  font-weight: bold;
+  color: white;
+  /* opacity und scale setzt PickerWheel beim Scrollen. */
+  will-change: transform, opacity;
+}
+
+.wheel-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid rgba(103, 58, 183, 0.9);
+  border-bottom: 1px solid rgba(103, 58, 183, 0.9);
+  background: rgba(103, 58, 183, 0.12);
+  pointer-events: none;
+  z-index: 1;
 }

@@ -2,7 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import PlayerColumn from '../components/PlayerColumn'
 import ScoreInputModal from '../components/ScoreInputModal'
 import { useAuth } from '../auth/AuthContext'
-import { CATEGORIES, isBoardComplete, withTotals } from '../logic/kniffel'
+import {
+  CATEGORIES,
+  isBoardComplete,
+  withTotals,
+  nextCellState,
+} from '../logic/kniffel'
+import { celebrateKniffel } from '../lib/celebrate'
 import { calculateTotal } from '../logic/calculator'
 import {
   fetchGame,
@@ -20,6 +26,11 @@ export default function OnlineGame({ gameId, onExit }) {
   const [players, setPlayers] = useState([])
   const [scores, setScores] = useState([])
   const [modal, setModal] = useState(null)
+  // Der vorgemerkte Zug: { cIdx, entry }. Durchgeklickt wird rein lokal, erst
+  // "Zug bestätigen" schickt genau EINEN playTurn() los — die RPC schreibt eine
+  // Zelle einmalig und schaltet den Zug weiter, ein Tap pro Klick würde sie
+  // beim zweiten Mal ablehnen.
+  const [pending, setPending] = useState(null)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -40,6 +51,12 @@ export default function OnlineGame({ gameId, onExit }) {
     return unsubscribe
   }, [gameId, load])
 
+  // Wechselt der Zug, ist ein noch vorgemerkter Eintrag hinfällig — sonst
+  // stünde er beim nächsten eigenen Zug in der falschen Zelle.
+  useEffect(() => {
+    setPending(null)
+  }, [game?.current_turn])
+
   // Zellen nach Spieler gruppieren
   const scoresByPlayer = {}
   for (const s of scores) {
@@ -59,11 +76,53 @@ export default function OnlineGame({ gameId, onExit }) {
     scoresByPlayer,
   )
 
-  async function handleSave(val, isKniffel) {
-    setSubmitting(true)
+  // Die eigene Spalte zeigt den vorgemerkten Zug schon mit — inklusive SUMME
+  // und TOTAL, damit man sieht, was der Eintrag bringt.
+  function columnScores(profileId) {
+    const own = scoresByPlayer[profileId] || {}
+    if (profileId !== meId || !pending) return withTotals(own)
+    return withTotals({ ...own, [pending.cIdx]: pending.entry })
+  }
+
+  // Sheet-Kategorien (3er/4er/CHNC, Kniffel) merken den Wert nur vor — abgeschickt
+  // wird wie beim Durchklicken erst mit "Zug bestätigen".
+  function handleSave(val, isKniffel, face = null) {
+    setPending({
+      cIdx: modal.cIdx,
+      entry: { value: val, timestamp: Date.now(), isKniffel, face },
+    })
     setModal(null)
+  }
+
+  // Tap auf eine Zelle: oberer Teil und feste Punktzahlen klicken durch, der
+  // Rest öffnet das Sheet. Alles bleibt lokal, bis bestätigt wird.
+  function handleTap(cIdx) {
+    if (!isMyTurn) return
+    if (scoresByPlayer[meId]?.[cIdx]) return // schon abgeschickt
+    const step = nextCellState(cIdx, pending?.cIdx === cIdx ? pending.entry : undefined)
+    if (!step) return
+    if (step.kind === 'sheet') {
+      setModal({ cIdx })
+      return
+    }
+    // Außerhalb von setPending, sonst feuert die Feier im StrictMode doppelt.
+    if (step.kind === 'set' && step.entry.isKniffel) {
+      celebrateKniffel({ kind: 'upper', face: step.entry.face })
+    }
+    setPending(step.kind === 'set' ? { cIdx, entry: step.entry } : null)
+  }
+
+  async function confirmTurn() {
+    if (!pending || submitting) return
+    setSubmitting(true)
     try {
-      await playTurn(gameId, modal.cIdx, val, isKniffel)
+      await playTurn(
+        gameId,
+        pending.cIdx,
+        pending.entry.value,
+        pending.entry.isKniffel,
+      )
+      setPending(null)
       load()
     } catch (e) {
       setError(e.message ?? 'Zug nicht möglich.')
@@ -257,34 +316,63 @@ export default function OnlineGame({ gameId, onExit }) {
               pIdx={p.profileId}
               name={p.profileId === meId ? `${p.name} (du)` : p.name}
               categories={CATEGORIES}
-              playerScores={withTotals(scoresByPlayer[p.profileId] || {})}
+              playerScores={columnScores(p.profileId)}
               canEdit={isMyTurn && p.profileId === meId}
-              onTap={(_, cIdx) => {
-                if (scoresByPlayer[meId]?.[cIdx]) return // schon belegt
-                setModal({ cIdx })
-              }}
+              pendingCIdx={p.profileId === meId ? (pending?.cIdx ?? null) : null}
+              onTap={(_, cIdx) => handleTap(cIdx)}
             />
           ))}
         </div>
       </div>
 
       <div className="footer">
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-          {isHost
-            ? complete
-              ? 'Alle fertig — auswerten!'
-              : 'Reihum eintragen…'
-            : 'Der Host wertet am Ende aus.'}
-        </div>
-        {isHost && (
-          <button
-            className="btn-primary"
-            onClick={handleEvaluate}
-            disabled={saving}
-            style={{ opacity: complete ? 1 : 0.6 }}
-          >
-            {saving ? <Spinner row label="Speichere…" size={16} /> : 'AUSWERTEN →'}
-          </button>
+        {/* Solange ein Zug vorgemerkt ist, hat er Vorrang — er ist das
+            Einzige, was gerade zu tun ist. */}
+        {pending ? (
+          <>
+            <button
+              className="btn-danger"
+              onClick={() => setPending(null)}
+              disabled={submitting}
+            >
+              Verwerfen
+            </button>
+            <button
+              className="btn-primary"
+              onClick={confirmTurn}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <Spinner row label="Sende…" size={16} />
+              ) : (
+                'ZUG BESTÄTIGEN ✓'
+              )}
+            </button>
+          </>
+        ) : (
+          <>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+              {isHost
+                ? complete
+                  ? 'Alle fertig — auswerten!'
+                  : 'Reihum eintragen…'
+                : 'Der Host wertet am Ende aus.'}
+            </div>
+            {isHost && (
+              <button
+                className="btn-primary"
+                onClick={handleEvaluate}
+                disabled={saving}
+                style={{ opacity: complete ? 1 : 0.6 }}
+              >
+                {saving ? (
+                  <Spinner row label="Speichere…" size={16} />
+                ) : (
+                  'AUSWERTEN →'
+                )}
+              </button>
+            )}
+          </>
         )}
       </div>
 

@@ -1,18 +1,14 @@
 import { calculateUpperAbsolutePoints } from '../logic/calculator'
+import { formatCell } from '../logic/kniffel'
 
-export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap, onRemove, canEdit = true }) {
+export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap, onRemove, canEdit = true, pendingCIdx = null }) {
   const absolutePoints = calculateUpperAbsolutePoints(playerScores)
 
   function getCellText(cIdx) {
-    const entry = playerScores[cIdx]
-    if (!entry) return '-'
     const cat = categories[cIdx]
-    const isUpperSum = cat === 'SUMME'
-    const isLower = cIdx >= 7
-    const val = entry.value
-    if (isUpperSum) return String(absolutePoints)
-    if (isLower || val < 0) return String(val)
-    return `+${val}`
+    if (cat === 'SUMME') return String(absolutePoints)
+    if (cat === 'TOTAL') return String(playerScores[cIdx]?.value ?? 0)
+    return formatCell(cIdx, playerScores[cIdx])
   }
 
   return (
@@ -88,6 +84,16 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               position: 'relative',
             }}
           >
+            {/* Online: lokal durchgeklickt, aber noch nicht abgeschickt. */}
+            {cIdx === pendingCIdx && (
+              <span style={{
+                position: 'absolute',
+                inset: '3px',
+                borderRadius: 6,
+                border: '2px dashed #f5a623',
+                pointerEvents: 'none',
+              }} />
+            )}
             {hasKniffelBonus && (
               <span style={{
                 position: 'absolute',

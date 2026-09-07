@@ -37,6 +37,24 @@ nicht) und `GEO_DEV_CITY=<Stadt>`, weil die Geo-Header nur auf Vercel ankommen.
   nächsten Start erneut. Jetzt wird auf `controllerchange` gewartet, der Timer
   ist nur noch Notnagel.
 
+- [x] **Fehltipp-Schutz beim Zell-Klick** — ein Tap auf eine schon gefüllte
+  Zelle markiert sie nur noch (oranger Rahmen), erst der zweite ändert.
+  `lib/useArmedCell.js`; die gerade durchgeklickte Zelle bleibt 3 s scharf,
+  damit 0→1→2→3→4→5 Würfel in einem Rutsch geht. Dazu ein Toast mit
+  „Rückgängig" (`lib/toast.js`, gerendert vom `Toaster`).
+- [x] **Kein Zwangssprung in die Auswertung** — die letzte Zelle machte den
+  Block schon beim ERSTEN Tap voll (0 Würfel = gestrichen), worauf sich die
+  Auswertung drüberschob und das Weitertippen unmöglich wurde. `App.jsx` zeigt
+  jetzt wie die anderen beiden Modi nur den `AUSWERTEN →`-Button. `gameComplete`
+  ist dabei von State zu abgeleitet geworden — es wurde ohnehin nur an einer
+  Stelle gelesen, und der `setTimeout` aus dem `setScores`-Updater fällt weg.
+- [x] **Länderumrisse auf der Städte-Karte** — `CityMap.jsx` zeichnete nur ein
+  Gradnetz, übrig blieb ein leerer Kasten mit Punkten. Die Umrisse liegen jetzt
+  in `lib/worldLand.js`, erzeugt von `scripts/build-world.mjs` aus world-atlas
+  (Natural Earth 110m, public domain, nur devDependency — zur Laufzeit wird
+  nichts nachgeladen). `MIN_SPAN_DEG` von 8 auf 30, sonst ist der Ausschnitt bei
+  zwei Städten im selben Land zu eng, um etwas wiederzuerkennen.
+
 Nebenbei repariert: der freie Block („~") in Kniffel Extrem war nie anklickbar
 (`nextAllowed={null}` konnte nie `=== realIdx` sein), und eine durchgeklickte
 Zelle wäre dort nach dem ersten Tap sofort gesperrt gewesen — editierbar sind

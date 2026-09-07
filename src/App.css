@@ -264,7 +264,9 @@ html, body, #root {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 28px;
+  /* Über dem Footer: sonst liegt "Rückgängig" direkt auf RESTART, und genau
+     das will man beim Zurücknehmen eines Fehltipps nicht treffen. */
+  bottom: calc(env(safe-area-inset-bottom) + 84px);
   transform: translateX(-50%);
   background: rgba(30, 30, 30, 0.96);
   border: 1px solid rgba(103, 58, 183, 0.5);
@@ -277,6 +279,24 @@ html, body, #root {
   animation: toastIn 0.25s ease-out;
   max-width: calc(100vw - 32px);
   text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: center;
+}
+/* "Rückgängig" neben der Meldung (siehe lib/toast.js). Der Toast liegt unten
+   mittig, der Daumen ist also ohnehin in der Nähe — deshalb reicht der Text
+   ohne eigenen Rahmen, er muss sich nur klar abheben. */
+.toast-action {
+  background: none;
+  border: none;
+  color: #b388ff;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 /* Rest-Hinweis, wenn das Update-Modal weggetippt wurde (components/UpdatePrompt.jsx) */
 .update-pill {

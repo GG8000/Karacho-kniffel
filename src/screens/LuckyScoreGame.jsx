@@ -9,6 +9,8 @@ import { finalizeIdentities } from "../auth/identity";
 import { calculateUpperBalance, calculateTotal } from "../logic/calculator";
 import { CATEGORIES, nextCellState } from "../logic/kniffel";
 import { celebrateKniffel } from "../lib/celebrate";
+import { showToast } from "../lib/toast";
+import { useArmedCell } from "../lib/useArmedCell";
 import { saveGame } from "../storage";
 
 function refreshTotals(playerScores) {
@@ -31,6 +33,15 @@ export default function LuckyScoreGame({ onExit }) {
   const [scores, setScores] = useState({});
   const [modal, setModal] = useState(null);
   const [restartDialog, setRestartDialog] = useState(false);
+  // Fehltipp-Schutz für schon gefüllte Zellen (siehe lib/useArmedCell.js).
+  const { armed, requestEdit, disarm } = useArmedCell();
+
+  // armed ist "<pIdx>:<cIdx>" — die Spalte will nur ihren eigenen Index.
+  function armedFor(pIdx) {
+    if (!armed) return null;
+    const [p, c] = armed.split(":");
+    return Number(p) === pIdx ? Number(c) : null;
+  }
 
   const [newName, setNewName] = useState("");
   const [newPrediction, setNewPrediction] = useState("");
@@ -69,23 +80,48 @@ export default function LuckyScoreGame({ onExit }) {
     setModal(null);
   }
 
-  // Tap auf eine Zelle: durchklicken oder Sheet öffnen — wie im Normal-Modus.
+  // Tap auf eine Zelle: durchklicken oder Sheet öffnen — wie im Normal-Modus,
+  // inklusive Fehltipp-Schutz (siehe lib/useArmedCell.js).
   function handleTap(pIdx, cIdx) {
-    const step = nextCellState(cIdx, scores[pIdx]?.[cIdx]);
+    const prev = scores[pIdx]?.[cIdx];
+    const step = nextCellState(cIdx, prev);
     if (!step) return;
     if (step.kind === "sheet") {
+      disarm();
       setModal({ pIdx, cIdx });
+      return;
+    }
+    if (!requestEdit(`${pIdx}:${cIdx}`, !!prev)) {
+      showToast({ text: "Nochmal tippen zum Ändern" });
       return;
     }
     // Außerhalb des Updaters, sonst feuert die Feier im StrictMode doppelt.
     if (step.kind === "set" && step.entry.isKniffel) {
       celebrateKniffel({ kind: "upper", face: step.entry.face });
     }
-    setScores((prev) => {
-      const playerScores = { ...prev[pIdx] };
+    setScores((cur) => {
+      const playerScores = { ...cur[pIdx] };
       if (step.kind === "set") playerScores[cIdx] = step.entry;
       else delete playerScores[cIdx];
-      return { ...prev, [pIdx]: refreshTotals(playerScores) };
+      return { ...cur, [pIdx]: refreshTotals(playerScores) };
+    });
+    if (prev) {
+      showToast({
+        text: "Geändert",
+        actionLabel: "Rückgängig",
+        onAction: () => restoreCell(pIdx, cIdx, prev),
+      });
+    }
+  }
+
+  // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
+  function restoreCell(pIdx, cIdx, entry) {
+    disarm();
+    setScores((cur) => {
+      const playerScores = { ...cur[pIdx] };
+      if (entry) playerScores[cIdx] = entry;
+      else delete playerScores[cIdx];
+      return { ...cur, [pIdx]: refreshTotals(playerScores) };
     });
   }
 
@@ -396,6 +432,7 @@ export default function LuckyScoreGame({ onExit }) {
               categories={CATEGORIES}
               playerScores={scores[pIdx] || {}}
               onTap={handleTap}
+              armedCIdx={armedFor(pIdx)}
             />
           ))}
         </div>

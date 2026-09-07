@@ -13,6 +13,8 @@ import {
   nextCellState,
 } from "../logic/kniffel";
 import { celebrateKniffel } from "../lib/celebrate";
+import { showToast } from "../lib/toast";
+import { useArmedCell } from "../lib/useArmedCell";
 import { saveGame } from "../storage";
 
 function refreshTotals(playerScores) {
@@ -56,6 +58,7 @@ function BlockColumn({
   access,
   onTap,
   pIdx,
+  armedIdx = null,
 }) {
   return (
     <div
@@ -86,12 +89,17 @@ function BlockColumn({
         const isAuto = realIdx === 6 || realIdx === 14;
         const isNext = realIdx === access.next;
         const isClickable = !isAuto && access.editable.has(realIdx);
+        // Einmal angetippt, ein zweiter Tap ändert erst (lib/useArmedCell.js).
+        const isArmed = realIdx === armedIdx;
 
         return (
           <div
             key={i}
             onClick={isClickable ? () => onTap(pIdx, realIdx) : undefined}
             style={{
+              position: "relative",
+              outline: isArmed ? "2px solid #f5a623" : "none",
+              outlineOffset: "-3px",
               flex: 1,
               minHeight: 40, // ← NEU: muss mit cat-cell Höhe übereinstimmen
               height: 40, // ← NEU
@@ -100,11 +108,13 @@ function BlockColumn({
               justifyContent: "center",
               fontSize: 13,
               color: isNext ? "#f5a623" : "white",
-              background: isNext
-                ? "rgba(245,166,35,0.1)"
-                : isAuto
-                  ? "rgba(255,255,255,0.05)"
-                  : "transparent",
+              background: isArmed
+                ? "rgba(245,166,35,0.18)"
+                : isNext
+                  ? "rgba(245,166,35,0.1)"
+                  : isAuto
+                    ? "rgba(255,255,255,0.05)"
+                    : "transparent",
               borderBottom: "1px solid rgba(255,255,255,0.08)",
               cursor: isClickable ? "pointer" : "default",
               fontWeight: isAuto ? "bold" : "normal",
@@ -142,6 +152,15 @@ export default function KniffelExtrem({ onExit }) {
   const [modal, setModal] = useState(null);
   const [restartDialog, setRestartDialog] = useState(false);
   const [saving, setSaving] = useState(false); // sperrt die Speichern-Buttons
+  // Fehltipp-Schutz für schon gefüllte Zellen (siehe lib/useArmedCell.js).
+  const { armed, requestEdit, disarm } = useArmedCell();
+
+  // armed ist "<pIdx>:<block>:<cIdx>" — die Spalte will nur ihren eigenen Index.
+  function armedFor(pIdx, block) {
+    if (!armed) return null;
+    const [p, b, c] = armed.split(":");
+    return Number(p) === pIdx && b === block ? Number(c) : null;
+  }
 
   // Leere Blöcke für eine Runde — beim Anlegen eines Spielers und bei der
   // Revanche dieselbe Form.
@@ -182,23 +201,50 @@ export default function KniffelExtrem({ onExit }) {
   // Tap auf eine Zelle: durchklicken oder Sheet öffnen. Wie im Normal-Modus,
   // nur mit dem Block als zusätzlicher Ebene.
   function handleTap(pIdx, block, cIdx) {
-    const step = nextCellState(cIdx, scores[pIdx][block][cIdx]);
+    const prev = scores[pIdx][block][cIdx];
+    const step = nextCellState(cIdx, prev);
     if (!step) return;
     if (step.kind === "sheet") {
+      disarm();
       setModal({ pIdx, cIdx, block });
+      return;
+    }
+    if (!requestEdit(`${pIdx}:${block}:${cIdx}`, !!prev)) {
+      showToast({ text: "Nochmal tippen zum Ändern" });
       return;
     }
     // Außerhalb des Updaters, sonst feuert die Feier im StrictMode doppelt.
     if (step.kind === "set" && step.entry.isKniffel) {
       celebrateKniffel({ kind: "upper", face: step.entry.face });
     }
-    setScores((prev) => {
-      const blockScores = { ...prev[pIdx][block] };
+    setScores((cur) => {
+      const blockScores = { ...cur[pIdx][block] };
       if (step.kind === "set") blockScores[cIdx] = step.entry;
       else delete blockScores[cIdx];
       return {
-        ...prev,
-        [pIdx]: { ...prev[pIdx], [block]: refreshTotals(blockScores) },
+        ...cur,
+        [pIdx]: { ...cur[pIdx], [block]: refreshTotals(blockScores) },
+      };
+    });
+    if (prev) {
+      showToast({
+        text: "Geändert",
+        actionLabel: "Rückgängig",
+        onAction: () => restoreCell(pIdx, block, cIdx, prev),
+      });
+    }
+  }
+
+  // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
+  function restoreCell(pIdx, block, cIdx, entry) {
+    disarm();
+    setScores((cur) => {
+      const blockScores = { ...cur[pIdx][block] };
+      if (entry) blockScores[cIdx] = entry;
+      else delete blockScores[cIdx];
+      return {
+        ...cur,
+        [pIdx]: { ...cur[pIdx], [block]: refreshTotals(blockScores) },
       };
     });
   }
@@ -599,6 +645,7 @@ export default function KniffelExtrem({ onExit }) {
                     playerScores={s.topDown}
                     access={accessTD}
                     onTap={(p, c) => handleTap(p, "topDown", c)}
+                    armedIdx={armedFor(pIdx, "topDown")}
                   />
                   <BlockColumn
                     label="↑"
@@ -607,6 +654,7 @@ export default function KniffelExtrem({ onExit }) {
                     playerScores={s.bottomUp}
                     access={accessBU}
                     onTap={(p, c) => handleTap(p, "bottomUp", c)}
+                    armedIdx={armedFor(pIdx, "bottomUp")}
                   />
                   <BlockColumn
                     label="~"
@@ -615,6 +663,7 @@ export default function KniffelExtrem({ onExit }) {
                     playerScores={s.normal}
                     access={accessFree}
                     onTap={(p, c) => handleTap(p, "normal", c)}
+                    armedIdx={armedFor(pIdx, "normal")}
                   />
                 </div>
               </div>

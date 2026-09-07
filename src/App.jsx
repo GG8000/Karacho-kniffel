@@ -21,6 +21,8 @@ import {
   nextCellState,
 } from "./logic/kniffel";
 import { celebrateKniffel } from "./lib/celebrate";
+import { showToast } from "./lib/toast";
+import { useArmedCell } from "./lib/useArmedCell";
 import { saveGame, syncPending, importLegacyHistory, getHistory } from "./storage";
 import { computeTypicalValues } from "./logic/categoryStats";
 import { keyOf } from "./logic/stats";
@@ -217,11 +219,24 @@ export default function App() {
   const [removeDialog, setRemoveDialog] = useState(false); // NEU
   const [restartDialog, setRestartDialog] = useState(false);
   const [newName, setNewName] = useState("");
-  const [gameComplete, setGameComplete] = useState(false); // NEU: ersetzt resultScreen
-  const [showResult, setShowResult] = useState(false); // NEU: trennt "fertig" von "Auswertung sichtbar"
+  const [showResult, setShowResult] = useState(false); // trennt "fertig" von "Auswertung sichtbar"
   const [typical, setTypical] = useState({}); // typische Slider-Werte je Spieler
   const [saving, setSaving] = useState(false); // sperrt die Speichern-Buttons
   const inputRef = useRef(null);
+
+  // Fehltipp-Schutz für schon gefüllte Zellen (siehe lib/useArmedCell.js).
+  const { armed, requestEdit, disarm } = useArmedCell();
+
+  // Abgeleitet statt State: sonst müsste mitten im setScores-Updater State
+  // gesetzt werden, und genau dafür stand hier früher ein setTimeout.
+  const gameComplete = isGameComplete(players, scores);
+
+  // armed ist "<pIdx>:<cIdx>" — die Spalte will nur ihren eigenen Index.
+  function armedFor(pIdx) {
+    if (!armed) return null;
+    const [p, c] = armed.split(":");
+    return Number(p) === pIdx ? Number(c) : null;
+  }
 
   // Typische Werte aus der Historie laden — Grundlage der smarten Slider-Defaults.
   function refreshTypical() {
@@ -313,14 +328,7 @@ export default function App() {
         ...prev[pIdx],
         [cIdx]: { value, timestamp: Date.now(), isKniffel, face },
       };
-      const updated = { ...prev, [pIdx]: refreshTotals(playerScores) };
-      if (isGameComplete(players, updated)) {
-        setTimeout(() => {
-          setGameComplete(true);
-          setShowResult(true);
-        }, 300);
-      }
-      return updated;
+      return { ...prev, [pIdx]: refreshTotals(playerScores) };
     });
     setModal(null);
   }
@@ -328,10 +336,20 @@ export default function App() {
   // Tap auf eine Zelle: oberer Teil und feste Punktzahlen klicken direkt durch,
   // 3er/4er/CHNC und die Kniffel-Zeile öffnen das Sheet.
   function handleTap(pIdx, cIdx) {
-    const step = nextCellState(cIdx, scores[pIdx]?.[cIdx]);
+    const prev = scores[pIdx]?.[cIdx];
+    const step = nextCellState(cIdx, prev);
     if (!step) return;
     if (step.kind === "sheet") {
+      // Das Sheet ändert von sich aus noch nichts — kein Schutz nötig.
+      disarm();
       setModal({ pIdx, cIdx });
+      return;
+    }
+    // Ein Tap auf eine schon gefuellte Zelle markiert sie nur; erst der zweite
+    // ändert wirklich. Beim Durchklicken bleibt dieselbe Zelle scharf, 0→1→2→3→
+    // 4→5 Würfel läuft also in einem Rutsch durch.
+    if (!requestEdit(`${pIdx}:${cIdx}`, !!prev)) {
+      showToast({ text: "Nochmal tippen zum Ändern" });
       return;
     }
     // Die Feier bewusst VOR setScores und außerhalb des Updaters: React ruft
@@ -339,20 +357,31 @@ export default function App() {
     if (step.kind === "set" && step.entry.isKniffel) {
       celebrateKniffel({ kind: "upper", face: step.entry.face });
     }
-    setScores((prev) => {
-      const playerScores = { ...prev[pIdx] };
+    setScores((cur) => {
+      const playerScores = { ...cur[pIdx] };
       if (step.kind === "set") playerScores[cIdx] = step.entry;
       else delete playerScores[cIdx];
-      const updated = { ...prev, [pIdx]: refreshTotals(playerScores) };
-      if (isGameComplete(players, updated)) {
-        setTimeout(() => {
-          setGameComplete(true);
-          setShowResult(true);
-        }, 300);
-      } else {
-        setGameComplete(false);
-      }
-      return updated;
+      return { ...cur, [pIdx]: refreshTotals(playerScores) };
+    });
+    // Nur bei einer echten Änderung — das bloße Füllen einer leeren Zelle ist
+    // der Normalfall und braucht kein Rückgängig.
+    if (prev) {
+      showToast({
+        text: "Geändert",
+        actionLabel: "Rückgängig",
+        onAction: () => restoreCell(pIdx, cIdx, prev),
+      });
+    }
+  }
+
+  // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
+  function restoreCell(pIdx, cIdx, entry) {
+    disarm();
+    setScores((cur) => {
+      const playerScores = { ...cur[pIdx] };
+      if (entry) playerScores[cIdx] = entry;
+      else delete playerScores[cIdx];
+      return { ...cur, [pIdx]: refreshTotals(playerScores) };
     });
   }
 
@@ -362,8 +391,6 @@ export default function App() {
       delete playerScores[cIdx];
       return { ...prev, [pIdx]: refreshTotals(playerScores) };
     });
-    // Wenn Spieler eine Korrektur macht, Spiel wieder als unfertig markieren
-    setGameComplete(false);
     setModal(null);
   }
 
@@ -401,7 +428,6 @@ export default function App() {
       });
       return newScores;
     });
-    setGameComplete(false);
     setRemoveDialog(false);
   }
 
@@ -484,7 +510,6 @@ export default function App() {
       await saveGame(buildGamePayload());
       refreshTypical();
       setScores(Object.fromEntries(players.map((_, i) => [i, {}])));
-      setGameComplete(false);
       setShowResult(false);
     } finally {
       setSaving(false);
@@ -503,7 +528,6 @@ export default function App() {
       setIdentities([]);
       setScores({});
       setRestartDialog(false);
-      setGameComplete(false);
       setShowResult(false);
     } finally {
       setSaving(false);
@@ -515,7 +539,6 @@ export default function App() {
     setPlayers([]);
     setIdentities([]);
     setScores({});
-    setGameComplete(false);
     setShowResult(false);
   }
 
@@ -689,6 +712,7 @@ export default function App() {
               categories={CATEGORIES}
               playerScores={scores[pIdx] || {}}
               onTap={handleTap}
+              armedCIdx={armedFor(pIdx)}
               onRemove={() => setRemoveDialog(pIdx)} // NEU
             />
           ))}

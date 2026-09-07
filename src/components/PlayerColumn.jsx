@@ -1,7 +1,7 @@
 import { calculateUpperAbsolutePoints } from '../logic/calculator'
 import { formatCell } from '../logic/kniffel'
 
-export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap, onRemove, canEdit = true, pendingCIdx = null }) {
+export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap, onRemove, canEdit = true, pendingCIdx = null, armedCIdx = null }) {
   const absolutePoints = calculateUpperAbsolutePoints(playerScores)
 
   function getCellText(cIdx) {
@@ -76,7 +76,11 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
                 ? '2px solid #673ab7'
                 : '1px solid rgba(255,255,255,0.1)',
               borderRight: '1px solid rgba(255,255,255,0.1)',
-              backgroundColor: isSumRow ? 'rgba(255,255,255,0.07)' : 'transparent',
+              backgroundColor: isSumRow
+                ? 'rgba(255,255,255,0.07)'
+                : cIdx === armedCIdx
+                  ? 'rgba(245,166,35,0.12)'
+                  : 'transparent',
               color,
               cursor: isSumRow || !canEdit ? 'default' : 'pointer',
               userSelect: 'none',
@@ -84,6 +88,18 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               position: 'relative',
             }}
           >
+            {/* Fehltipp-Schutz: einmal angetippt, ein zweiter Tap ändert erst
+                (siehe lib/useArmedCell.js). Durchgezogen statt gestrichelt, damit
+                es nicht mit "vorgemerkt" darunter verwechselt wird. */}
+            {cIdx === armedCIdx && (
+              <span style={{
+                position: 'absolute',
+                inset: '3px',
+                borderRadius: 6,
+                border: '2px solid #f5a623',
+                pointerEvents: 'none',
+              }} />
+            )}
             {/* Online: lokal durchgeklickt, aber noch nicht abgeschickt. */}
             {cIdx === pendingCIdx && (
               <span style={{

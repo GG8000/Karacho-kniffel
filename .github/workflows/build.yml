@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # api/ ist eine Vercel Serverless Function und laeuft nie durch vite build.
+      - name: Syntaxcheck der Serverless Function
+        run: node --check api/session.js
+
+      # Baut nur, was auch wirklich committet ist: genau so faellt ein Commit
+      # auf, der eine Datei importiert, die lokal noch untracked herumliegt.
+      - run: npm run build

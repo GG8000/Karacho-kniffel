@@ -3,3 +3,4 @@ dist/
 .vite/
 .claude/
 .env
+.DS_Store

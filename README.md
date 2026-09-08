@@ -55,6 +55,17 @@ nicht) und `GEO_DEV_CITY=<Stadt>`, weil die Geo-Header nur auf Vercel ankommen.
   nichts nachgeladen). `MIN_SPAN_DEG` von 8 auf 30, sonst ist der Ausschnitt bei
   zwei Städten im selben Land zu eng, um etwas wiederzuerkennen.
 
+- [x] **Namen zusammenlegen und aus der Statistik nehmen** — im Spieler-Tab
+  unter „⚙ Verwalten". Derselbe Mensch taucht sonst doppelt auf (einmal als
+  Gast-Name, einmal als Account), und Testspieler stehen für immer in der
+  Rangliste. Die Spiele selbst werden dabei NICHT angefasst: Ein Spiel gehört
+  allen Beteiligten, ein Umschreiben oder Löschen träfe auch die Mitspieler.
+  Stattdessen legt jeder für sich Regeln fest (`sql/stat_rules.sql`, pro Konto
+  und per RLS privat), die `logic/applyStatRules.js` über die Historie legt,
+  bevor irgendein Aggregator sie sieht — deshalb wirken sie in Rangliste,
+  Head-to-Head, Kategorien, Reihenfolge und Monatsrückblick gleichermaßen, ohne
+  dass einer davon etwas davon wissen muss. Alles jederzeit umkehrbar.
+
 Nebenbei repariert: der freie Block („~") in Kniffel Extrem war nie anklickbar
 (`nextAllowed={null}` konnte nie `=== realIdx` sein), und eine durchgeklickte
 Zelle wäre dort nach dem ersten Tap sofort gesperrt gewesen — editierbar sind

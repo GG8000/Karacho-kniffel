@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import PlayerColumn from '../components/PlayerColumn'
 import ScoreInputModal from '../components/ScoreInputModal'
 import { useAuth } from '../auth/AuthContext'
 import {
   CATEGORIES,
   isBoardComplete,
+  isStruck,
   withTotals,
   nextCellState,
 } from '../logic/kniffel'
 import { celebrateKniffel } from '../lib/celebrate'
+import { announceStrike } from '../lib/strike'
 import { calculateTotal } from '../logic/calculator'
 import {
   fetchGame,
@@ -16,7 +18,9 @@ import {
   playTurn,
   setStatus,
 } from '../lib/liveGame'
-import { saveGame } from '../storage'
+import { saveGame, toParticipants } from '../storage'
+import { useRatingPreview } from '../lib/useRatingPreview'
+import RatingDelta from '../components/RatingDelta'
 import Spinner from '../components/Spinner'
 
 export default function OnlineGame({ gameId, onExit }) {
@@ -89,6 +93,10 @@ export default function OnlineGame({ gameId, onExit }) {
   function handleSave(val, isKniffel, face = null) {
     setPending({
       cIdx: modal.cIdx,
+      // fromSheet: dort hat das Sheet eine Streichung schon gemeldet, genau wie
+      // es die Kniffel-Feier schon abgefeuert hat — confirmTurn darf sie nicht
+      // ein zweites Mal zeigen.
+      fromSheet: true,
       entry: { value: val, timestamp: Date.now(), isKniffel, face },
     })
     setModal(null)
@@ -122,6 +130,16 @@ export default function OnlineGame({ gameId, onExit }) {
         pending.entry.value,
         pending.entry.isKniffel,
       )
+      // Erst jetzt ist die Streichung wirklich passiert — anders als lokal, wo
+      // der Tap sie schon setzt. Deshalb hier statt in handleTap, und ohne
+      // Bedenkzeit: das Bestätigen IST die Entscheidung.
+      if (!pending.fromSheet && isStruck(pending.cIdx, pending.entry)) {
+        announceStrike({
+          cIdx: pending.cIdx,
+          category: CATEGORIES[pending.cIdx],
+          playerName: players.find((p) => p.profileId === meId)?.name,
+        })
+      }
       setPending(null)
       load()
     } catch (e) {
@@ -131,27 +149,33 @@ export default function OnlineGame({ gameId, onExit }) {
     }
   }
 
+  // Eine Quelle für das Speichern (Host) UND die Rating-Vorschau, die alle
+  // Beteiligten auf dem Ergebnis-Screen sehen.
+  function buildGamePayload() {
+    const totals = players.map((p) =>
+      calculateTotal(scoresByPlayer[p.profileId] || {}),
+    )
+    const max = Math.max(...totals)
+    return {
+      mode: 'normal',
+      players: players.map((p) => p.name),
+      identities: players.map((p) => p.profileId),
+      finalScores: totals,
+      isWinners: totals.map((t) => t === max),
+      kniffelCounts: players.map(
+        (p) =>
+          Object.values(scoresByPlayer[p.profileId] || {}).filter(
+            (e) => e.isKniffel,
+          ).length,
+      ),
+    }
+  }
+
   // Host wertet aus: Endergebnis in die Statistik schreiben + Status 'done'
   async function handleEvaluate() {
     setSaving(true)
     try {
-      const totals = players.map((p) =>
-        calculateTotal(scoresByPlayer[p.profileId] || {}),
-      )
-      const max = Math.max(...totals)
-      await saveGame({
-        mode: 'normal',
-        players: players.map((p) => p.name),
-        identities: players.map((p) => p.profileId),
-        finalScores: totals,
-        isWinners: totals.map((t) => t === max),
-        kniffelCounts: players.map(
-          (p) =>
-            Object.values(scoresByPlayer[p.profileId] || {}).filter(
-              (e) => e.isKniffel,
-            ).length,
-        ),
-      })
+      await saveGame(buildGamePayload())
       await setStatus(gameId, 'done')
     } catch (e) {
       setError(e.message ?? 'Auswerten fehlgeschlagen.')
@@ -159,6 +183,24 @@ export default function OnlineGame({ gameId, onExit }) {
       setSaving(false)
     }
   }
+
+  // Vorschau aufs Rating für den Ergebnis-Screen. Der Hook steht vor der Kette
+  // früher Returns — Hooks müssen in jedem Render laufen.
+  //
+  // alreadySaved: anders als in den lokalen Modi ist das Spiel hier schon
+  // geschrieben, wenn dieser Screen erscheint (der Host speichert in
+  // handleEvaluate). Der Hook rechnet es für den Vorher-Stand wieder heraus.
+  const resultParticipants = useMemo(
+    () =>
+      game?.status === 'done' ? toParticipants(buildGamePayload()) : [],
+    // Absichtlich die EINGABEN von buildGamePayload() als Abhängigkeiten und
+    // nicht die Funktion selbst — die wird bei jedem Render neu angelegt.
+    [game?.status, players, scores],
+  )
+  const { rows: ratingRows } = useRatingPreview(resultParticipants, {
+    active: game?.status === 'done',
+    alreadySaved: true,
+  })
 
   if (!game) {
     return (
@@ -184,9 +226,12 @@ export default function OnlineGame({ gameId, onExit }) {
 
   // Ergebnis-Screen
   if (game.status === 'done') {
+    // Index mitführen: die Liste wird nach Punkten sortiert, die Rating-Zeilen
+    // liegen aber in der Reihenfolge von players.
     const results = players
-      .map((p) => ({
+      .map((p, pIdx) => ({
         name: p.name,
+        pIdx,
         total: calculateTotal(scoresByPlayer[p.profileId] || {}),
       }))
       .sort((a, b) => b.total - a.total)
@@ -231,17 +276,30 @@ export default function OnlineGame({ gameId, onExit }) {
               borderRadius: 12,
               padding: '14px 18px',
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+              flexDirection: 'column',
+              gap: 6,
             }}
           >
-            <div style={{ color: 'white', fontWeight: 'bold' }}>
-              {i === 0 ? '🏆 ' : i === 1 ? '🥈 ' : '🥉 '}
-              {r.name}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ color: 'white', fontWeight: 'bold' }}>
+                {i === 0 ? '🏆 ' : i === 1 ? '🥈 ' : '🥉 '}
+                {r.name}
+              </div>
+              <div
+                style={{ color: '#673ab7', fontWeight: 'bold', fontSize: 18 }}
+              >
+                {r.total}
+              </div>
             </div>
-            <div style={{ color: '#673ab7', fontWeight: 'bold', fontSize: 18 }}>
-              {r.total}
-            </div>
+            {ratingRows[r.pIdx] && (
+              <RatingDelta {...ratingRows[r.pIdx]} index={i} />
+            )}
           </div>
         ))}
         <button
@@ -397,6 +455,7 @@ export default function OnlineGame({ gameId, onExit }) {
           pIdx={meId}
           cIdx={modal.cIdx}
           categories={CATEGORIES}
+          playerName={players.find((p) => p.profileId === meId)?.name}
           onClose={() => setModal(null)}
           onSave={handleSave}
           onDelete={() => setModal(null)}

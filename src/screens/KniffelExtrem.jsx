@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import ScoreInputModal from "../components/ScoreInputModal";
 import FriendCodeDialog from "../components/FriendCodeDialog";
 import PlayerLinkButtons from "../components/PlayerLinkButtons";
@@ -10,12 +10,16 @@ import {
   CATEGORIES as CATS_NORMAL,
   PLAYABLE_INDICES,
   formatCell,
+  isStruck,
   nextCellState,
 } from "../logic/kniffel";
 import { celebrateKniffel } from "../lib/celebrate";
+import { armStrike, cancelStrike } from "../lib/strike";
 import { showToast } from "../lib/toast";
 import { useArmedCell } from "../lib/useArmedCell";
-import { saveGame } from "../storage";
+import { saveGame, toParticipants } from "../storage";
+import { useRatingPreview } from "../lib/useRatingPreview";
+import RatingDelta from "../components/RatingDelta";
 
 function refreshTotals(playerScores) {
   const now = Date.now();
@@ -162,6 +166,19 @@ export default function KniffelExtrem({ onExit }) {
     return Number(p) === pIdx && b === block ? Number(c) : null;
   }
 
+  // Vorschau aufs Rating für den Auswertungs-Screen. Steht hier oben, weil
+  // darunter die frühen Returns je Phase beginnen — Hooks müssen in jedem
+  // Render laufen. Geladen wird erst, wenn die Auswertung offen ist.
+  const resultParticipants = useMemo(
+    () => (showResult ? toParticipants(buildGamePayload()) : []),
+    // Absichtlich die EINGABEN von buildGamePayload() als Abhängigkeiten und
+    // nicht die Funktion selbst — die wird bei jedem Render neu angelegt.
+    [showResult, players, identities, scores, profile],
+  );
+  const { rows: ratingRows } = useRatingPreview(resultParticipants, {
+    active: showResult,
+  });
+
   // Leere Blöcke für eine Runde — beim Anlegen eines Spielers und bei der
   // Revanche dieselbe Form.
   const emptyBlocks = () => ({ topDown: {}, bottomUp: {}, normal: {} });
@@ -217,6 +234,16 @@ export default function KniffelExtrem({ onExit }) {
     if (step.kind === "set" && step.entry.isKniffel) {
       celebrateKniffel({ kind: "upper", face: step.entry.face });
     }
+    // Streichung ankündigen — oben mit Bedenkzeit (siehe lib/strike.js).
+    if (step.kind === "set" && isStruck(cIdx, step.entry)) {
+      armStrike(`${pIdx}:${block}:${cIdx}`, {
+        cIdx,
+        category: CATS_NORMAL[cIdx],
+        playerName: players[pIdx],
+      });
+    } else {
+      cancelStrike(`${pIdx}:${block}:${cIdx}`);
+    }
     setScores((cur) => {
       const blockScores = { ...cur[pIdx][block] };
       if (step.kind === "set") blockScores[cIdx] = step.entry;
@@ -238,6 +265,7 @@ export default function KniffelExtrem({ onExit }) {
   // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
   function restoreCell(pIdx, block, cIdx, entry) {
     disarm();
+    cancelStrike(`${pIdx}:${block}:${cIdx}`);
     setScores((cur) => {
       const blockScores = { ...cur[pIdx][block] };
       if (entry) blockScores[cIdx] = entry;
@@ -455,8 +483,10 @@ export default function KniffelExtrem({ onExit }) {
 
   // Auswertungs-Screen — gleicher Flow wie normales Spiel
   if (showResult) {
+    // pIdx mitführen: die Liste wird nach Punkten sortiert, die Rating-Zeilen
+    // liegen aber in der Reihenfolge der Spieler.
     const results = players
-      .map((name, pIdx) => ({ name, total: getTotal(pIdx) }))
+      .map((name, pIdx) => ({ name, pIdx, total: getTotal(pIdx) }))
       .sort((a, b) => b.total - a.total);
 
     return (
@@ -500,17 +530,30 @@ export default function KniffelExtrem({ onExit }) {
               borderRadius: 12,
               padding: "14px 18px",
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              flexDirection: "column",
+              gap: 6,
             }}
           >
-            <div style={{ color: "white", fontWeight: "bold" }}>
-              {i === 0 ? "🏆 " : i === 1 ? "🥈 " : "🥉 "}
-              {r.name}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ color: "white", fontWeight: "bold" }}>
+                {i === 0 ? "🏆 " : i === 1 ? "🥈 " : "🥉 "}
+                {r.name}
+              </div>
+              <div
+                style={{ color: "#673ab7", fontWeight: "bold", fontSize: 18 }}
+              >
+                {r.total}
+              </div>
             </div>
-            <div style={{ color: "#673ab7", fontWeight: "bold", fontSize: 18 }}>
-              {r.total}
-            </div>
+            {ratingRows[r.pIdx] && (
+              <RatingDelta {...ratingRows[r.pIdx]} index={i} />
+            )}
           </div>
         ))}
 
@@ -686,6 +729,7 @@ export default function KniffelExtrem({ onExit }) {
           pIdx={modal.pIdx}
           cIdx={modal.cIdx}
           categories={CATS_NORMAL}
+          playerName={players[modal.pIdx]}
           onClose={() => setModal(null)}
           onSave={(val, isKniffel) =>
             updateScore(modal.pIdx, modal.block, modal.cIdx, val, isKniffel)

@@ -4,7 +4,7 @@
 // games: [{ id, mode, playedAt, participants:[{ profileId, name,
 //            finalScore, isWinner, kniffelCount }] }]
 
-const START_RATING = 1000
+export const START_RATING = 1000
 const K = 24
 
 export function keyOf(p) {

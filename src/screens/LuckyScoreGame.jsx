@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import PlayerColumn from "../components/PlayerColumn";
 import ScoreInputModal from "../components/ScoreInputModal";
 import FriendCodeDialog from "../components/FriendCodeDialog";
@@ -7,11 +7,14 @@ import RecentPlayersPicker from "../components/RecentPlayersPicker";
 import { useAuth } from "../auth/AuthContext";
 import { finalizeIdentities } from "../auth/identity";
 import { calculateUpperBalance, calculateTotal } from "../logic/calculator";
-import { CATEGORIES, nextCellState } from "../logic/kniffel";
+import { CATEGORIES, isStruck, nextCellState } from "../logic/kniffel";
 import { celebrateKniffel } from "../lib/celebrate";
+import { armStrike, cancelStrike } from "../lib/strike";
 import { showToast } from "../lib/toast";
 import { useArmedCell } from "../lib/useArmedCell";
-import { saveGame } from "../storage";
+import { saveGame, toParticipants } from "../storage";
+import { useRatingPreview } from "../lib/useRatingPreview";
+import RatingDelta from "../components/RatingDelta";
 
 function refreshTotals(playerScores) {
   const now = Date.now();
@@ -46,6 +49,19 @@ export default function LuckyScoreGame({ onExit }) {
   const [newName, setNewName] = useState("");
   const [newPrediction, setNewPrediction] = useState("");
   const inputRef = useRef(null);
+
+  // Vorschau aufs Rating für den Auswertungs-Screen. Steht hier oben, weil
+  // darunter die frühen Returns je Phase beginnen — Hooks müssen in jedem
+  // Render laufen. Geladen wird erst, wenn die Auswertung offen ist.
+  const resultParticipants = useMemo(
+    () => (phase === "result" ? toParticipants(buildGamePayload()) : []),
+    // Absichtlich die EINGABEN von buildGamePayload() als Abhängigkeiten und
+    // nicht die Funktion selbst — die wird bei jedem Render neu angelegt.
+    [phase, players, identities, scores, predictions, profile],
+  );
+  const { rows: ratingRows } = useRatingPreview(resultParticipants, {
+    active: phase === "result",
+  });
 
   function addPlayer() {
     const name = newName.trim();
@@ -99,6 +115,16 @@ export default function LuckyScoreGame({ onExit }) {
     if (step.kind === "set" && step.entry.isKniffel) {
       celebrateKniffel({ kind: "upper", face: step.entry.face });
     }
+    // Streichung ankündigen — oben mit Bedenkzeit (siehe lib/strike.js).
+    if (step.kind === "set" && isStruck(cIdx, step.entry)) {
+      armStrike(`${pIdx}:${cIdx}`, {
+        cIdx,
+        category: CATEGORIES[cIdx],
+        playerName: players[pIdx],
+      });
+    } else {
+      cancelStrike(`${pIdx}:${cIdx}`);
+    }
     setScores((cur) => {
       const playerScores = { ...cur[pIdx] };
       if (step.kind === "set") playerScores[cIdx] = step.entry;
@@ -117,6 +143,7 @@ export default function LuckyScoreGame({ onExit }) {
   // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
   function restoreCell(pIdx, cIdx, entry) {
     disarm();
+    cancelStrike(`${pIdx}:${cIdx}`);
     setScores((cur) => {
       const playerScores = { ...cur[pIdx] };
       if (entry) playerScores[cIdx] = entry;
@@ -134,8 +161,9 @@ export default function LuckyScoreGame({ onExit }) {
     setModal(null);
   }
 
-  // Einziger Speicherpfad: Auswertung ist nur Vorschau, gespeichert wird beim "Weiter"
-  async function handleSaveAndExit() {
+  // Eine Quelle für das Speichern UND die Rating-Vorschau auf dem
+  // Auswertungs-Screen — sonst driften Sieger und Punkte auseinander.
+  function buildGamePayload() {
     const results = players.map((name, pIdx) => {
       const total = scores[pIdx]?.[14]?.value ?? 0;
       const diff = Math.abs(total - predictions[pIdx]);
@@ -148,7 +176,7 @@ export default function LuckyScoreGame({ onExit }) {
         Object.values(scores[pIdx] || {}).filter((e) => e.isKniffel).length,
     );
 
-    await saveGame({
+    return {
       mode: "lucky",
       players,
       identities: finalizeIdentities(players, identities, profile),
@@ -156,7 +184,12 @@ export default function LuckyScoreGame({ onExit }) {
       // Gewinner ist hier, wer am nächsten am eigenen Tipp liegt
       isWinners: results.map((r) => r.diff === minDiff),
       kniffelCounts,
-    });
+    };
+  }
+
+  // Einziger Speicherpfad: Auswertung ist nur Vorschau, gespeichert wird beim "Weiter"
+  async function handleSaveAndExit() {
+    await saveGame(buildGamePayload());
     onExit();
   }
 
@@ -305,12 +338,14 @@ export default function LuckyScoreGame({ onExit }) {
 
   // Result Phase
   if (phase === "result") {
+    // pIdx mitführen: die Liste wird nach Abweichung sortiert, die
+    // Rating-Zeilen liegen aber in der Reihenfolge der Spieler.
     const results = players
       .map((name, pIdx) => {
         const total = scores[pIdx]?.[14]?.value ?? 0;
         const pred = predictions[pIdx];
         const diff = Math.abs(total - pred);
-        return { name, total, pred, diff };
+        return { name, pIdx, total, pred, diff };
       })
       .sort((a, b) => a.diff - b.diff);
 
@@ -366,6 +401,9 @@ export default function LuckyScoreGame({ onExit }) {
             <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
               Tipp: {r.pred} · Erreicht: {r.total} · Abweichung: {r.diff}
             </div>
+            {ratingRows[r.pIdx] && (
+              <RatingDelta {...ratingRows[r.pIdx]} index={i} />
+            )}
           </div>
         ))}
 
@@ -452,6 +490,7 @@ export default function LuckyScoreGame({ onExit }) {
           pIdx={modal.pIdx}
           cIdx={modal.cIdx}
           categories={CATEGORIES}
+          playerName={players[modal.pIdx]}
           onClose={() => setModal(null)}
           onSave={(val, isKniffel) =>
             updateScore(modal.pIdx, modal.cIdx, val, isKniffel)

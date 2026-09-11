@@ -46,9 +46,11 @@ async function localUserId() {
 
 // --- Schreiben -------------------------------------------------------------
 
-// Schreibt sofort lokal (offline-fest) und schiebt danach best-effort in die Cloud.
-export async function saveGame({
-  mode,
+// Bringt einen Spiel-Payload (wie ihn buildGamePayload() in den Spielmodi
+// liefert) in die Teilnehmerform, die im Cache und in der Historie steht.
+// Exportiert, weil die Rating-Vorschau auf dem Auswertungs-Screen dieselbe Form
+// braucht, bevor irgendetwas gespeichert ist (siehe logic/ratingPreview.js).
+export function toParticipants({
   players = [],
   identities = [],
   finalScores = [],
@@ -56,9 +58,7 @@ export async function saveGame({
   isWinners = [],
   cells = [], // pro Spieler das Kategorie-Raster; nur der Normal-Modus liefert es
 }) {
-  const uid = await localUserId()
-
-  const participants = players.map((name, i) => {
+  return players.map((name, i) => {
     const profileId = identities[i] ?? null
     return {
       profileId,
@@ -70,6 +70,13 @@ export async function saveGame({
       cells: cells[i] ?? null,
     }
   })
+}
+
+// Schreibt sofort lokal (offline-fest) und schiebt danach best-effort in die Cloud.
+export async function saveGame(payload) {
+  const { mode } = payload
+  const uid = await localUserId()
+  const participants = toParticipants(payload)
 
   const game = {
     clientId: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,

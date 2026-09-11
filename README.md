@@ -66,6 +66,25 @@ nicht) und `GEO_DEV_CITY=<Stadt>`, weil die Geo-Header nur auf Vercel ankommen.
   Head-to-Head, Kategorien, Reihenfolge und Monatsrückblick gleichermaßen, ohne
   dass einer davon etwas davon wissen muss. Alles jederzeit umkehrbar.
 
+- [x] **Ranglistenpunkte in der Auswertung** — das Rating stand bisher nur in
+  der Statistik, also nirgends dort, wo es entsteht. Jede Ergebniskarte zeigt
+  jetzt `vorher → nachher` und den Zuwachs, in allen vier Modi. Gerechnet wird
+  in `logic/ratingPreview.js` mit ZWEI Durchläufen von `computeStats()` — einmal
+  ohne, einmal mit dem neuen Spiel. Dadurch bleibt die ELO-Formel an genau einer
+  Stelle, und der Nachher-Wert stimmt exakt mit dem überein, was die Rangliste
+  nach dem Speichern zeigt. `lib/useRatingPreview.js` legt vorher dieselben
+  Statistik-Regeln darüber wie die Statistik selbst, sonst wichen
+  zusammengelegte Spieler ab. Online ist das Spiel beim Auswerten schon
+  geschrieben — dort wird es für den Vorher-Stand wieder herausgerechnet.
+- [x] **Animation beim Streichen** — Gegenstück zur Kniffel-Feier, gleicher
+  Aufbau: ein Kanal (`lib/strike.js`) und ein global gemounteter Empfänger
+  (`StrikeAnimation.jsx` in `main.jsx`). Heikel war der obere Teil: dort IST die
+  Streichung der erste Tap beim Durchklicken 0→1→2→3→4→5, eine sofortige
+  Animation hätte bei jedem Eintrag geknallt. `armStrike()` wartet deshalb oben
+  0,7 s ab, ob die Zelle wirklich auf null Würfeln stehen bleibt; der nächste
+  Tap und „Rückgängig" nehmen sie zurück. Unten ist Streichen eine bewusste
+  Eingabe und knallt sofort. Online zählt erst „Zug bestätigen", nicht der Tap.
+
 Nebenbei repariert: der freie Block („~") in Kniffel Extrem war nie anklickbar
 (`nextAllowed={null}` konnte nie `=== realIdx` sein), und eine durchgeklickte
 Zelle wäre dort nach dem ersten Tap sofort gesperrt gewesen — editierbar sind

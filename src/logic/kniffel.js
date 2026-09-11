@@ -104,6 +104,15 @@ export function nextCellState(cIdx, entry) {
   return { kind: 'sheet' }
 }
 
+// Gestrichen heißt oben "0 Würfel" (Balance -3 * Augenzahl, die kleinste
+// mögliche Eintragung) und unten schlicht 0 Punkte. Die Historie kennt nur die
+// rohen Werte, dort leitet categoryStats.decodeCell dasselbe noch einmal ab.
+export function isStruck(cIdx, entry) {
+  if (!entry || SUM_INDICES.includes(cIdx)) return false
+  if (UPPER_INDICES.includes(cIdx)) return upperCount(cIdx, entry.value) === 0
+  return entry.value === 0
+}
+
 // Beschriftung einer SPIELBAREN Zelle. SUMME und TOTAL bleiben außen vor —
 // die beiden Spalten-Komponenten zeigen dort Unterschiedliches an.
 //

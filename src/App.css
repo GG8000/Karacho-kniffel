@@ -387,10 +387,65 @@ html, body, #root {
   transition: opacity 0.35s ease-out;
 }
 
-/* Wer Bewegung reduziert haben will, bekommt nur noch das Ein-/Ausblenden. */
+/* --- Rating-Zeile in der Auswertung (components/RatingDelta.jsx) ---------- */
+
+/* Die Zeile blendet ein, während die Zahl schon hochzählt. */
+@keyframes ratingIn {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Streich-Animation (siehe components/StrikeAnimation.jsx) ------------- */
+
+/* Der Strich wird gezogen, statt einfach dazustehen: der Balken wächst von
+   links nach rechts. transform-origin steht am Element. */
+@keyframes strikeSlash {
+  0%   { transform: scaleX(0); opacity: 0.85; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+
+/* Dunkelrot zieht von den Rändern herein. */
+@keyframes strikeVignette {
+  0%   { opacity: 0; }
+  40%  { opacity: 1; }
+  100% { opacity: 0.85; }
+}
+
+/* Schriftzug stempelt sich auf den Strich — leicht schief, wie von Hand. */
+@keyframes strikeStamp {
+  0%   { transform: scale(2.2) rotate(-9deg); opacity: 0; filter: blur(6px); }
+  55%  { transform: scale(0.94) rotate(-2deg); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1) rotate(-2deg); opacity: 1; }
+}
+
+/* Asche fällt nach unten weg, statt wie die Kniffel-Funken zu sprengen. */
+@keyframes strikeAsh {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.9; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0.3); opacity: 0; }
+}
+
+.strike-overlay {
+  position: fixed;
+  inset: 0;
+  /* Unter der Kniffel-Feier: fällt beides zusammen, gewinnt der Kniffel. */
+  z-index: 19000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.35s ease-out;
+}
+
+/* Wer Bewegung reduziert haben will, bekommt nur noch das Ein-/Ausblenden.
+   Die Rating-Zeile MUSS hier mit stehen: sie blendet mit fill-mode "both" ein,
+   bliebe ohne laufende Animation also unsichtbar — anders als bei den beiden
+   Overlays ginge dabei echter Inhalt verloren. */
 @media (prefers-reduced-motion: reduce) {
   .kniffel-overlay,
-  .kniffel-overlay * {
+  .kniffel-overlay *,
+  .strike-overlay,
+  .strike-overlay *,
+  .rating-delta {
     animation: none !important;
   }
 }

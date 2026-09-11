@@ -5,6 +5,7 @@ import App from './App'
 import { AuthProvider } from './auth/AuthContext'
 import Toaster from './components/Toaster'
 import KniffelCelebration from './components/KniffelCelebration'
+import StrikeAnimation from './components/StrikeAnimation'
 import UpdatePrompt from './components/UpdatePrompt'
 
 createRoot(document.getElementById('root')).render(
@@ -15,6 +16,8 @@ createRoot(document.getElementById('root')).render(
       <Toaster />
       {/* Ebenso die Kniffel-Feier — sie wird aus jedem Spielmodus abgefeuert */}
       <KniffelCelebration />
+      {/* Gegenstück dazu: die Streich-Animation, ebenfalls aus jedem Modus */}
+      <StrikeAnimation />
       {/* Registriert den Service Worker und meldet neue Builds */}
       <UpdatePrompt />
       {/* Gehört hierher und nicht in App.jsx: dort steht eine Kette früher

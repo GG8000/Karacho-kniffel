@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { celebrateKniffel } from '../lib/celebrate'
+import { announceStrike } from '../lib/strike'
 import { WHEEL_MIN, WHEEL_MAX, kniffelFaceFor } from '../logic/kniffel'
 import PickerWheel from './PickerWheel'
 import Die from './Die'
@@ -35,7 +36,7 @@ function useHasKeyboard() {
   return fine
 }
 
-export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, onClose, onSave, onDelete }) {
+export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, defaultValue, onClose, onSave, onDelete }) {
   const catName = categories[cIdx]
   const isKniffelRow = catName === 'KNFFL'
   const isWheel = !isKniffelRow
@@ -81,6 +82,14 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, 
     save(sumValue, claimed, claimed ? kniffelFace : null)
   }
 
+  // Streichen ist hier eine bewusste Eingabe und knallt deshalb sofort — anders
+  // als im oberen Teil, wo lib/strike.js erst abwartet. Dieses Sheet teilen
+  // sich alle Spielmodi, also hängt daran 3er/4er/CHNC/KNFFL überall.
+  function strike() {
+    announceStrike({ cIdx, category: catName, playerName })
+    onSave(0, false)
+  }
+
   // Zahlenfeld beim Öffnen scharf stellen und den Wert markieren, damit die
   // erste getippte Ziffer ihn ersetzt statt sich anzuhängen.
   useEffect(() => {
@@ -113,7 +122,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, 
       const digit = /^[0-9]$/.test(e.key) ? Number(e.key) : null
       if (digit === 0) {
         e.preventDefault()
-        onSave(0, false)
+        strike()
         return
       }
       if (digit === null || digit > 6) return
@@ -226,7 +235,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, 
               <button className="btn-delete" onClick={onDelete}>
                 🗑 Löschen
               </button>
-              <button className="btn-delete" onClick={() => onSave(0, false)}>
+              <button className="btn-delete" onClick={strike}>
                 ❌ Streichen
               </button>
               <button className="btn-primary" onClick={confirmWheel}>
@@ -279,7 +288,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, defaultValue, 
             </div>
             <button
               className="btn-grid-item"
-              onClick={() => onSave(0, false)}
+              onClick={strike}
               style={{ alignSelf: 'center' }}
             >
               Streichen

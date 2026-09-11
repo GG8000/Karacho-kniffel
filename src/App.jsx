@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import PlayerColumn from "./components/PlayerColumn";
 import ScoreInputModal from "./components/ScoreInputModal";
 import ModeSelect from "./screens/ModeSelect";
@@ -18,14 +18,24 @@ import { calculateUpperBalance, calculateTotal } from "./logic/calculator";
 import {
   CATEGORIES,
   PLAYABLE_INDICES,
+  isStruck,
   nextCellState,
 } from "./logic/kniffel";
 import { celebrateKniffel } from "./lib/celebrate";
+import { armStrike, cancelStrike } from "./lib/strike";
 import { showToast } from "./lib/toast";
 import { useArmedCell } from "./lib/useArmedCell";
-import { saveGame, syncPending, importLegacyHistory, getHistory } from "./storage";
+import {
+  saveGame,
+  syncPending,
+  importLegacyHistory,
+  getHistory,
+  toParticipants,
+} from "./storage";
 import { computeTypicalValues } from "./logic/categoryStats";
 import { keyOf } from "./logic/stats";
+import { useRatingPreview } from "./lib/useRatingPreview";
+import RatingDelta from "./components/RatingDelta";
 import { pathForState, screenForPath, isTransientPath } from "./lib/analytics";
 import { startSessionTracking } from "./lib/geoSession";
 import Spinner from "./components/Spinner";
@@ -231,6 +241,19 @@ export default function App() {
   // gesetzt werden, und genau dafür stand hier früher ein setTimeout.
   const gameComplete = isGameComplete(players, scores);
 
+  // Vorschau aufs Rating für den Auswertungs-Screen. Der Hook steht hier oben,
+  // weil darunter eine Kette früher Returns beginnt — Hooks müssen in jedem
+  // Render laufen. Geladen wird erst, wenn die Auswertung wirklich offen ist.
+  const resultParticipants = useMemo(
+    () => (showResult ? toParticipants(buildGamePayload()) : []),
+    // Absichtlich die EINGABEN von buildGamePayload() als Abhängigkeiten und
+    // nicht die Funktion selbst — die wird bei jedem Render neu angelegt.
+    [showResult, players, identities, scores, profile],
+  );
+  const { rows: ratingRows } = useRatingPreview(resultParticipants, {
+    active: showResult,
+  });
+
   // armed ist "<pIdx>:<cIdx>" — die Spalte will nur ihren eigenen Index.
   function armedFor(pIdx) {
     if (!armed) return null;
@@ -357,6 +380,17 @@ export default function App() {
     if (step.kind === "set" && step.entry.isKniffel) {
       celebrateKniffel({ kind: "upper", face: step.entry.face });
     }
+    // Streichung ankündigen — oben mit Bedenkzeit, damit das Durchklicken
+    // 0→1→2→3→4→5 nicht bei jedem ersten Tap knallt (siehe lib/strike.js).
+    if (step.kind === "set" && isStruck(cIdx, step.entry)) {
+      armStrike(`${pIdx}:${cIdx}`, {
+        cIdx,
+        category: CATEGORIES[cIdx],
+        playerName: players[pIdx],
+      });
+    } else {
+      cancelStrike(`${pIdx}:${cIdx}`);
+    }
     setScores((cur) => {
       const playerScores = { ...cur[pIdx] };
       if (step.kind === "set") playerScores[cIdx] = step.entry;
@@ -377,6 +411,7 @@ export default function App() {
   // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
   function restoreCell(pIdx, cIdx, entry) {
     disarm();
+    cancelStrike(`${pIdx}:${cIdx}`);
     setScores((cur) => {
       const playerScores = { ...cur[pIdx] };
       if (entry) playerScores[cIdx] = entry;
@@ -570,8 +605,14 @@ export default function App() {
 
   // Auswertungs-Screen
   if (showResult) {
+    // pIdx mitführen: die Liste wird nach Punkten sortiert, die Rating-Zeilen
+    // liegen aber in der Reihenfolge der Spieler.
     const results = players
-      .map((name, pIdx) => ({ name, total: scores[pIdx]?.[14]?.value ?? 0 }))
+      .map((name, pIdx) => ({
+        name,
+        pIdx,
+        total: scores[pIdx]?.[14]?.value ?? 0,
+      }))
       .sort((a, b) => b.total - a.total);
 
     return (
@@ -615,17 +656,30 @@ export default function App() {
               borderRadius: 12,
               padding: "14px 18px",
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              flexDirection: "column",
+              gap: 6,
             }}
           >
-            <div style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              {i === 0 ? "🏆 " : i === 1 ? "🥈 " : "🥉 "}
-              {r.name}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+                {i === 0 ? "🏆 " : i === 1 ? "🥈 " : "🥉 "}
+                {r.name}
+              </div>
+              <div
+                style={{ color: "#673ab7", fontWeight: "bold", fontSize: 18 }}
+              >
+                {r.total}
+              </div>
             </div>
-            <div style={{ color: "#673ab7", fontWeight: "bold", fontSize: 18 }}>
-              {r.total}
-            </div>
+            {ratingRows[r.pIdx] && (
+              <RatingDelta {...ratingRows[r.pIdx]} index={i} />
+            )}
           </div>
         ))}
 
@@ -740,6 +794,7 @@ export default function App() {
           pIdx={modal.pIdx}
           cIdx={modal.cIdx}
           categories={CATEGORIES}
+          playerName={players[modal.pIdx]}
           defaultValue={modalDefaultValue(modal.pIdx, modal.cIdx)}
           onClose={() => setModal(null)}
           onSave={(val, isKniffel, face) =>

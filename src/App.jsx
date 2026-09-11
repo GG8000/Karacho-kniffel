@@ -24,6 +24,7 @@ import {
 import { celebrateKniffel } from "./lib/celebrate";
 import { armStrike, cancelStrike } from "./lib/strike";
 import { showToast } from "./lib/toast";
+import { openGuide } from "./lib/guide";
 import { useArmedCell } from "./lib/useArmedCell";
 import {
   saveGame,
@@ -40,6 +41,9 @@ import { pathForState, screenForPath, isTransientPath } from "./lib/analytics";
 import { startSessionTracking } from "./lib/geoSession";
 import Spinner from "./components/Spinner";
 import "./App.css";
+
+// Einmal gesehen reicht — danach nur noch über den "?"-Knopf im Spiel.
+const GUIDE_SEEN_KEY = "kniffel-guide-seen-v1";
 
 function isGameComplete(players, scores) {
   return (
@@ -302,6 +306,20 @@ export default function App() {
     screen,
     showResult,
   ]);
+
+  // Beim allerersten Mal die Anleitung zeigen. Bewusst an derselben Bedingung
+  // wie pathForState(): erst wenn der Ladeschirm durch ist UND jemand wirklich
+  // in der App steht — sonst legt sie sich über Ladeanimation oder Login.
+  // Der Merker wird sofort gesetzt, damit der doppelte Effect-Lauf im
+  // StrictMode sie nicht zweimal öffnet.
+  useEffect(() => {
+    if (loading || authLoading) return;
+    if (!isLoggedIn && !guest) return;
+    if (isLoggedIn && profile && !nameConfirmed) return;
+    if (localStorage.getItem(GUIDE_SEEN_KEY) === "1") return;
+    localStorage.setItem(GUIDE_SEEN_KEY, "1");
+    openGuide();
+  }, [loading, authLoading, isLoggedIn, guest, profile, nameConfirmed]);
 
   // Zurück-Button: funktioniert dadurch erstmals in der PWA, statt die App zu
   // schließen. Anders als goToModeSelect() wird hier bewusst nichts geleert —
@@ -744,7 +762,20 @@ export default function App() {
           ←
         </button>
         KNIFFEL BLOCK
-        <div style={{ width: 40 }} />
+        <button
+          onClick={openGuide}
+          aria-label="Anleitung"
+          style={{
+            background: "none",
+            border: "none",
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 17,
+            cursor: "pointer",
+            width: 40,
+          }}
+        >
+          ?
+        </button>
       </div>
 
       <div className="game-area">

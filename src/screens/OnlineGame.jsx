@@ -11,6 +11,7 @@ import {
 } from '../logic/kniffel'
 import { celebrateKniffel } from '../lib/celebrate'
 import { announceStrike } from '../lib/strike'
+import { openGuide } from '../lib/guide'
 import { calculateTotal } from '../logic/calculator'
 import {
   fetchGame,
@@ -330,7 +331,20 @@ export default function OnlineGame({ gameId, onExit }) {
           ←
         </button>
         🌐 ONLINE
-        <div style={{ width: 40 }} />
+        <button
+          onClick={openGuide}
+          aria-label='Anleitung'
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'rgba(255,255,255,0.75)',
+            fontSize: 17,
+            cursor: 'pointer',
+            width: 40,
+          }}
+        >
+          ?
+        </button>
       </div>
 
       {playing && currentPlayer && (

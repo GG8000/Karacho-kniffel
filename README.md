@@ -94,6 +94,18 @@ nicht) und `GEO_DEV_CITY=<Stadt>`, weil die Geo-Header nur auf Vercel ankommen.
   `sumScore` — bei drei Mitspielern zählt dasselbe Ergebnis gegen jeden von
   ihnen, die Zahl beantwortet „wie viel habe ich gegen DEN gespielt".
 
+- [x] **Anleitung in der App** — der obere Teil führt eine BALANCE statt
+  absoluter Punkte, und das sieht man ihm nicht an: „−" heißt „genau drei",
+  nicht „null". Wer nur gelegentlich mitspielt, musste sich das bisher erklären
+  lassen. `components/Guide.jsx` erklärt genau das plus die Bedienung der
+  Zellen; erreichbar über den „?"-Knopf in jeder Spielansicht und einmalig beim
+  ersten Start (`kniffel-guide-seen-v1`). Kanal `lib/guide.js` nach demselben
+  Muster wie `toast.js` — sonst müsste der Offen-Zustand durch vier Screens
+  gefädelt werden, die sonst nichts miteinander zu tun haben. Die
+  Beispielzellen laufen durch `formatCell()` aus `logic/kniffel.js`, also durch
+  dieselbe Funktion wie der echte Block: so kann die Anleitung nicht
+  auseinanderlaufen, wenn sich die Darstellung ändert.
+
 Nebenbei repariert: der freie Block („~") in Kniffel Extrem war nie anklickbar
 (`nextAllowed={null}` konnte nie `=== realIdx` sein), und eine durchgeklickte
 Zelle wäre dort nach dem ersten Tap sofort gesperrt gewesen — editierbar sind

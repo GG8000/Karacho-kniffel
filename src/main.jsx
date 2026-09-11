@@ -7,6 +7,7 @@ import Toaster from './components/Toaster'
 import KniffelCelebration from './components/KniffelCelebration'
 import StrikeAnimation from './components/StrikeAnimation'
 import UpdatePrompt from './components/UpdatePrompt'
+import Guide from './components/Guide'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -18,6 +19,8 @@ createRoot(document.getElementById('root')).render(
       <KniffelCelebration />
       {/* Gegenstück dazu: die Streich-Animation, ebenfalls aus jedem Modus */}
       <StrikeAnimation />
+      {/* Die Anleitung ebenso: der "?"-Knopf steht in jeder Spielansicht */}
+      <Guide />
       {/* Registriert den Service Worker und meldet neue Builds */}
       <UpdatePrompt />
       {/* Gehört hierher und nicht in App.jsx: dort steht eine Kette früher

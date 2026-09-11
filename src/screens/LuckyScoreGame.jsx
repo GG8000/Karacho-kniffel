@@ -11,6 +11,7 @@ import { CATEGORIES, isStruck, nextCellState } from "../logic/kniffel";
 import { celebrateKniffel } from "../lib/celebrate";
 import { armStrike, cancelStrike } from "../lib/strike";
 import { showToast } from "../lib/toast";
+import { openGuide } from "../lib/guide";
 import { useArmedCell } from "../lib/useArmedCell";
 import { saveGame, toParticipants } from "../storage";
 import { useRatingPreview } from "../lib/useRatingPreview";
@@ -449,7 +450,20 @@ export default function LuckyScoreGame({ onExit }) {
           ←
         </button>
         🔮 LUCKY SCORE
-        <div style={{ width: 40 }} />
+        <button
+          onClick={openGuide}
+          aria-label="Anleitung"
+          style={{
+            background: "none",
+            border: "none",
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 17,
+            cursor: "pointer",
+            width: 40,
+          }}
+        >
+          ?
+        </button>
       </div>
 
       <div className="game-area">

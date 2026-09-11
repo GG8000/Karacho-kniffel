@@ -12,11 +12,11 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
   }
 
   return (
-    <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+    <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--rule)' }}>
       <div style={{
-        height: 50, flexShrink: 0, background: '#673ab7',
+        height: 50, flexShrink: 0, background: 'var(--brass)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 'bold', color: 'black', fontSize: 14,
+        fontWeight: 'bold', color: 'var(--brass-ink)', fontSize: 14,
         position: 'relative', padding: '0 24px 0 4px',
         overflow: 'hidden',
       }}>
@@ -31,7 +31,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               position: 'absolute', right: 4, top: '50%',
               transform: 'translateY(-50%)',
               background: 'rgba(0,0,0,0.2)', border: 'none',
-              color: 'black', borderRadius: '50%',
+              color: 'var(--brass-ink)', borderRadius: '50%',
               width: 18, height: 18, fontSize: 10,
               cursor: 'pointer', display: 'flex',
               alignItems: 'center', justifyContent: 'center',
@@ -51,11 +51,11 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
         const hasUpperEntry = isUpperDice && !!entry
         const hasKniffelBonus = entry?.isKniffel === true  // ← das hat gefehlt
 
-        let color = 'white'
+        // Bonus erreicht/verfehlt heißt jetzt Messing gegen Rot: das alte
+        // Grün ginge auf grünem Filz unter.
+        let color = 'var(--cream)'
         if (isUpperSum && entry) {
-          color = absolutePoints >= 63 ? '#69ff47' : '#ff5252'
-        } else if (isTotalRow) {
-          color = '#ce93d8'
+          color = absolutePoints >= 63 ? 'var(--bonus-ok)' : 'var(--bonus-miss)'
         }
 
         return (
@@ -73,13 +73,13 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               fontWeight: isSumRow ? 'bold' : 'normal',
               
               borderBottom: isUpperSum
-                ? '2px solid #673ab7'
-                : '1px solid rgba(255,255,255,0.1)',
-              borderRight: '1px solid rgba(255,255,255,0.1)',
+                ? '2px solid var(--brass)'
+                : '1px solid var(--rule)',
+              borderRight: '1px solid var(--rule)',
               backgroundColor: isSumRow
-                ? 'rgba(255,255,255,0.07)'
+                ? 'var(--felt-raised)'
                 : cIdx === armedCIdx
-                  ? 'rgba(245,166,35,0.12)'
+                  ? 'rgba(255,138,101,0.16)'
                   : 'transparent',
               color,
               cursor: isSumRow || !canEdit ? 'default' : 'pointer',
@@ -96,7 +96,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
                 position: 'absolute',
                 inset: '3px',
                 borderRadius: 6,
-                border: '2px solid #f5a623',
+                border: '2px solid var(--armed)',
                 pointerEvents: 'none',
               }} />
             )}
@@ -106,7 +106,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
                 position: 'absolute',
                 inset: '3px',
                 borderRadius: 6,
-                border: '2px dashed #f5a623',
+                border: '2px dashed var(--armed)',
                 pointerEvents: 'none',
               }} />
             )}
@@ -115,9 +115,9 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
                 position: 'absolute',
                 inset: '4px',
                 borderRadius: '50%',
-                border: '2px solid #f5a623',
+                border: '2px solid var(--kniffel-gold)',
                 pointerEvents: 'none',
-                boxShadow: '0 0 6px rgba(245,166,35,0.5)',
+                boxShadow: '0 0 6px rgba(255,196,0,0.55)',
               }} />
             )}
             {getCellText(cIdx)}

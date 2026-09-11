@@ -1,7 +1,7 @@
 import { getHistory, clearHistory } from '../storage'
 import { useAuth } from '../auth/AuthContext'
 import { useEffect, useMemo, useState } from 'react'
-import { computeStats } from '../logic/stats'
+import { computeStats, keyOf } from '../logic/stats'
 import { computeCategoryStats } from '../logic/categoryStats'
 import { computeOrderStats } from '../logic/orderStats'
 import { computeKniffelFaces } from '../logic/kniffelFaces'
@@ -30,12 +30,22 @@ import Spinner from '../components/Spinner'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
+// Wer "ich" bin, wenn kein Konto dahintersteht (Gast, oder noch kein Spiel mit
+// dem Konto verknüpft). Siehe die Bilanz über der Rangliste.
+const ME_KEY = 'kniffel-me-key-v1'
+
 export default function Statistics({ onBack }) {
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, profile } = useAuth()
   // history ist die ROHE Historie; die Regeln legen sich erst darüber.
   const [history, setHistory] = useState(null)
   const [rules, setRules] = useState(EMPTY_RULES)
   const [selected, setSelected] = useState(null)
+  // Aus wessen Sicht die Bilanz über der Rangliste gilt. Angemeldet ist das
+  // automatisch das eigene Konto; als Gast weiß die App nicht, wer am Gerät
+  // sitzt, deshalb die Auswahl — einmal getroffen, bleibt sie.
+  const [meKey, setMeKey] = useState(
+    () => localStorage.getItem(ME_KEY) ?? null,
+  )
   // leaderboard | players | month | cities
   const [tab, setTab] = useState('leaderboard')
   const [clearDialog, setClearDialog] = useState(false)
@@ -125,6 +135,24 @@ export default function Statistics({ onBack }) {
   const players = Object.values(stats)
   const selectedPlayer = selected ? stats[selected] : null
   const ranked = [...players].sort((a, b) => b.rating - a.rating)
+
+  // Das eigene Konto gewinnt, sonst die gemerkte Auswahl, sonst der Spieler mit
+  // den meisten Spielen — besser ein plausibler Vorschlag als ein leerer Kasten.
+  const accountKey = profile?.id ? keyOf({ profileId: profile.id }) : null
+  const me =
+    (accountKey && stats[accountKey]) ||
+    (meKey && stats[meKey]) ||
+    [...players].sort((a, b) => b.gamesPlayed - a.gamesPlayed)[0] ||
+    null
+
+  function pickMe(key) {
+    setMeKey(key)
+    try {
+      localStorage.setItem(ME_KEY, key)
+    } catch {
+      // Privater Modus — dann gilt die Auswahl eben nur für diese Sitzung.
+    }
+  }
 
   // Regeln zum Anzeigen und Zurücknehmen.
   const ruleEntries = [
@@ -337,6 +365,68 @@ export default function Statistics({ onBack }) {
         ) : tab === 'leaderboard' ? (
           // ---- Rangliste ----
           <>
+            {/* Eigene Bilanz gegen alle — dieselbe Darstellung wie im
+                Spielerdetail, nur ohne dass man sich erst selbst antippen
+                muss. */}
+            {me && players.length > 1 && (
+              <div
+                style={{
+                  background: 'rgba(103,58,183,0.15)',
+                  border: '1px solid rgba(103,58,183,0.4)',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    marginBottom: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: 'rgba(255,255,255,0.4)',
+                      fontSize: 12,
+                      letterSpacing: 2,
+                    }}
+                  >
+                    {me.id === accountKey ? 'DEINE BILANZ' : 'BILANZ VON'}
+                  </span>
+                  {/* Angemeldet steht das eigene Konto fest; sonst wählbar. */}
+                  {me.id === accountKey ? (
+                    <span style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>
+                      {me.name}
+                    </span>
+                  ) : (
+                    <select
+                      value={me.id}
+                      onChange={(e) => pickMe(e.target.value)}
+                      style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        borderRadius: 8,
+                        padding: '5px 8px',
+                        fontSize: 13,
+                        fontWeight: 'bold',
+                        maxWidth: '55%',
+                      }}
+                    >
+                      {players.map((p) => (
+                        <option key={p.id} value={p.id} style={{ background: '#1e1e1e' }}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <HeadToHeadMatrix opponents={me.opponents} />
+              </div>
+            )}
+
             {faceStats.__global?.total > 0 && (
               <div
                 style={{

@@ -8,8 +8,9 @@ import { useAuth } from "../auth/AuthContext";
 import { finalizeIdentities } from "../auth/identity";
 import { calculateUpperBalance, calculateTotal } from "../logic/calculator";
 import { CATEGORIES, isStruck, nextCellState } from "../logic/kniffel";
-import { celebrateKniffel } from "../lib/celebrate";
-import { armStrike, cancelStrike } from "../lib/strike";
+import { armKniffel } from "../lib/celebrate";
+import { armStrike } from "../lib/strike";
+import { cancelCellEvent } from "../lib/pendingCell";
 import { showToast } from "../lib/toast";
 import { openGuide } from "../lib/guide";
 import { useArmedCell } from "../lib/useArmedCell";
@@ -113,18 +114,18 @@ export default function LuckyScoreGame({ onExit }) {
       return;
     }
     // Außerhalb des Updaters, sonst feuert die Feier im StrictMode doppelt.
+    // Oben mit Bedenkzeit, siehe lib/pendingCell.js.
+    const cellKey = `${pIdx}:${cIdx}`;
     if (step.kind === "set" && step.entry.isKniffel) {
-      celebrateKniffel({ kind: "upper", face: step.entry.face });
-    }
-    // Streichung ankündigen — oben mit Bedenkzeit (siehe lib/strike.js).
-    if (step.kind === "set" && isStruck(cIdx, step.entry)) {
-      armStrike(`${pIdx}:${cIdx}`, {
+      armKniffel(cellKey, { kind: "upper", face: step.entry.face });
+    } else if (step.kind === "set" && isStruck(cIdx, step.entry)) {
+      armStrike(cellKey, {
         cIdx,
         category: CATEGORIES[cIdx],
         playerName: players[pIdx],
       });
     } else {
-      cancelStrike(`${pIdx}:${cIdx}`);
+      cancelCellEvent(cellKey);
     }
     setScores((cur) => {
       const playerScores = { ...cur[pIdx] };
@@ -144,7 +145,7 @@ export default function LuckyScoreGame({ onExit }) {
   // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
   function restoreCell(pIdx, cIdx, entry) {
     disarm();
-    cancelStrike(`${pIdx}:${cIdx}`);
+    cancelCellEvent(`${pIdx}:${cIdx}`);
     setScores((cur) => {
       const playerScores = { ...cur[pIdx] };
       if (entry) playerScores[cIdx] = entry;

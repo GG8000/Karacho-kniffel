@@ -3,6 +3,7 @@
 // (StrikeAnimation in main.jsx).
 
 import { UPPER_INDICES } from '../logic/kniffel'
+import { armCellEvent, cancelCellEvent, SETTLE_MS } from './pendingCell'
 
 const listeners = new Set()
 
@@ -18,34 +19,18 @@ export function announceStrike(detail) {
   for (const cb of listeners) cb(detail)
 }
 
-// Im oberen Teil ist die Streichung zugleich der ERSTE Tap beim Durchklicken
-// 0→1→2→3→4→5 (siehe nextCellState). Dort wird deshalb gewartet, ob die Zelle
-// wirklich auf 0 Würfeln stehen bleibt; unten ist die Streichung eine bewusste
-// Eingabe und darf sofort knallen.
-const SETTLE_MS = 700
-
-const pending = new Map()
-
 // Kündigt eine Streichung an, die der nächste Tap auf dieselbe Zelle noch
-// zurücknehmen kann. key ist der Zellschlüssel ("<pIdx>:<cIdx>", in Extrem mit
-// Block dazwischen) — derselbe, den useArmedCell benutzt.
+// zurücknehmen kann (siehe pendingCell.js).
+//
+// Im oberen Teil ist die Streichung zugleich der ERSTE Tap beim Durchklicken,
+// dort wird gewartet. Unten ist sie eine bewusste Eingabe und darf sofort
+// knallen — über denselben Timer, damit ein direkt folgender Tap sie auch dann
+// noch erwischt.
 export function armStrike(key, detail) {
-  cancelStrike(key)
   const delay = UPPER_INDICES.includes(detail.cIdx) ? SETTLE_MS : 0
-  pending.set(
-    key,
-    setTimeout(() => {
-      pending.delete(key)
-      announceStrike(detail)
-    }, delay),
-  )
+  armCellEvent(key, () => announceStrike(detail), delay)
 }
 
-// Nimmt eine angekündigte Streichung zurück: weitergeklickt, geleert oder per
-// "Rückgängig" zurückgeholt.
 export function cancelStrike(key) {
-  const timer = pending.get(key)
-  if (timer === undefined) return
-  clearTimeout(timer)
-  pending.delete(key)
+  cancelCellEvent(key)
 }

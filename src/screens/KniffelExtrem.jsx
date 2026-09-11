@@ -13,8 +13,9 @@ import {
   isStruck,
   nextCellState,
 } from "../logic/kniffel";
-import { celebrateKniffel } from "../lib/celebrate";
-import { armStrike, cancelStrike } from "../lib/strike";
+import { armKniffel } from "../lib/celebrate";
+import { armStrike } from "../lib/strike";
+import { cancelCellEvent } from "../lib/pendingCell";
 import { showToast } from "../lib/toast";
 import { openGuide } from "../lib/guide";
 import { useArmedCell } from "../lib/useArmedCell";
@@ -71,19 +72,19 @@ function BlockColumn({
         display: "flex",
         flexDirection: "column",
         minWidth: 80,
-        borderLeft: "1px solid rgba(255,255,255,0.1)",
+        borderLeft: "1px solid var(--rule)",
       }}
     >
       <div
         style={{
           height: 36,
-          background: "#673ab7",
+          background: "var(--brass)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           fontSize: 11,
           fontWeight: "bold",
-          color: "black",
+          color: "var(--brass-ink)",
         }}
       >
         {label}
@@ -103,7 +104,7 @@ function BlockColumn({
             onClick={isClickable ? () => onTap(pIdx, realIdx) : undefined}
             style={{
               position: "relative",
-              outline: isArmed ? "2px solid #f5a623" : "none",
+              outline: isArmed ? "2px solid var(--armed)" : "none",
               outlineOffset: "-3px",
               flex: 1,
               minHeight: 40, // ← NEU: muss mit cat-cell Höhe übereinstimmen
@@ -112,15 +113,17 @@ function BlockColumn({
               alignItems: "center",
               justifyContent: "center",
               fontSize: 13,
-              color: isNext ? "#f5a623" : "white",
+              // Scharf (Fehltipp-Schutz) und "hier geht es weiter" hatten
+              // bisher dieselbe Farbe. Koralle warnt, Messing weist.
+              color: isNext ? "var(--brass)" : "var(--cream)",
               background: isArmed
-                ? "rgba(245,166,35,0.18)"
+                ? "rgba(255,138,101,0.16)"
                 : isNext
-                  ? "rgba(245,166,35,0.1)"
+                  ? "rgba(212,162,74,0.12)"
                   : isAuto
-                    ? "rgba(255,255,255,0.05)"
+                    ? "var(--felt-raised)"
                     : "transparent",
-              borderBottom: "1px solid rgba(255,255,255,0.08)",
+              borderBottom: "1px solid var(--rule)",
               cursor: isClickable ? "pointer" : "default",
               fontWeight: isAuto ? "bold" : "normal",
               opacity: entry ? 1 : isNext ? 1 : 0.3,
@@ -232,18 +235,18 @@ export default function KniffelExtrem({ onExit }) {
       return;
     }
     // Außerhalb des Updaters, sonst feuert die Feier im StrictMode doppelt.
+    // Oben mit Bedenkzeit, siehe lib/pendingCell.js.
+    const cellKey = `${pIdx}:${block}:${cIdx}`;
     if (step.kind === "set" && step.entry.isKniffel) {
-      celebrateKniffel({ kind: "upper", face: step.entry.face });
-    }
-    // Streichung ankündigen — oben mit Bedenkzeit (siehe lib/strike.js).
-    if (step.kind === "set" && isStruck(cIdx, step.entry)) {
-      armStrike(`${pIdx}:${block}:${cIdx}`, {
+      armKniffel(cellKey, { kind: "upper", face: step.entry.face });
+    } else if (step.kind === "set" && isStruck(cIdx, step.entry)) {
+      armStrike(cellKey, {
         cIdx,
         category: CATS_NORMAL[cIdx],
         playerName: players[pIdx],
       });
     } else {
-      cancelStrike(`${pIdx}:${block}:${cIdx}`);
+      cancelCellEvent(cellKey);
     }
     setScores((cur) => {
       const blockScores = { ...cur[pIdx][block] };
@@ -266,7 +269,7 @@ export default function KniffelExtrem({ onExit }) {
   // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
   function restoreCell(pIdx, block, cIdx, entry) {
     disarm();
-    cancelStrike(`${pIdx}:${block}:${cIdx}`);
+    cancelCellEvent(`${pIdx}:${block}:${cIdx}`);
     setScores((cur) => {
       const blockScores = { ...cur[pIdx][block] };
       if (entry) blockScores[cIdx] = entry;
@@ -642,7 +645,7 @@ export default function KniffelExtrem({ onExit }) {
             style={{
               height: 36,
               flexShrink: 0,
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: "1px solid var(--rule)",
               borderBottom: "none",
             }}
           />
@@ -653,8 +656,8 @@ export default function KniffelExtrem({ onExit }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "grey",
+              border: "1px solid var(--rule)",
+              color: "var(--cream-dim)",
               fontSize: 13,
             }}
           >
@@ -683,13 +686,13 @@ export default function KniffelExtrem({ onExit }) {
                   style={{
                     display: "flex",
                     height: 36,
-                    background: "#673ab7",
+                    background: "var(--brass)",
                     alignItems: "center",
                     justifyContent: "center",
                     fontWeight: "bold",
-                    color: "black",
+                    color: "var(--brass-ink)",
                     fontSize: 12,
-                    borderLeft: "1px solid rgba(255,255,255,0.1)",
+                    borderLeft: "1px solid var(--rule)",
                   }}
                 >
                   {name} · {getTotal(pIdx)}

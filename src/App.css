@@ -4,6 +4,39 @@
   padding: 0;
 }
 
+/* --- Farben des Blocks ----------------------------------------------------
+   Der Block ist bewusst eine eigene Fläche — ein Zettel auf dem Tisch. App-Bar,
+   Menü und Statistik behalten ihr Lila.
+
+   Vorher standen die Spaltenkoepfe auf #673ab7 mit SCHWARZER Schrift: Kontrast
+   2,7:1, das Minimum liegt bei 4,5:1. Die Werte unten sind durchgerechnet und
+   stehen als Kommentar dabei, damit sie beim nächsten Umbau nicht still
+   verlorengehen.
+
+   Als Custom Properties, weil die Blockfarben teils hier und teils inline in
+   PlayerColumn, KniffelExtrem und Guide stehen — so gibt es trotzdem nur eine
+   Quelle. */
+:root {
+  --felt: #1b3a2f;          /* Zellfläche */
+  --felt-deep: #153028;     /* Kategorie-Spalte */
+  --felt-raised: #224a3b;   /* SUMME- und TOTAL-Zeilen */
+  --rule: rgba(242, 237, 227, 0.15); /* Gitterlinien, warm statt kalt */
+
+  --brass: #d4a24a;         /* Spaltenkopf, nächste Zelle */
+  --brass-ink: #1a1a17;     /* Schrift auf Messing        — 7,9:1 */
+  --cream: #f2ede3;         /* Zellschrift, TOTAL         — 10,4:1 auf Filz */
+  --cream-dim: rgba(242, 237, 227, 0.65); /* Kategorie-Beschriftung — 6,0:1 */
+
+  /* Das alte Bonus-Grün fällt weg: grün auf grünem Filz trägt nicht. */
+  --bonus-ok: #ffd479;      /* SUMME >= 63                — 8,8:1 */
+  --bonus-miss: #ff8a80;    /* SUMME <  63                — 5,4:1 */
+
+  /* Früher teilten sich Kniffel-Ring und Fehltipp-Schutz dasselbe Orange.
+     Zwei Bedeutungen, zwei Farben. */
+  --kniffel-gold: #ffc400;  /* wie in der Kniffel-Feier */
+  --armed: #ff8a65;         /* scharfe bzw. vorgemerkte Zelle */
+}
+
 html, body, #root {
   height: 100%;
   overflow: hidden;
@@ -38,6 +71,9 @@ html, body, #root {
   min-height: 0;
   overflow-x: auto;
   overflow-y: auto;
+  /* Die Zellen selbst sind durchsichtig — der Filz kommt von hier, und bleibt
+     damit auch neben der letzten Spalte stehen. */
+  background: var(--felt);
 }
 
 .categories-column {
@@ -49,7 +85,7 @@ html, body, #root {
   position: sticky;
   left: 0;           /* ← bleibt beim horizontalen Scrollen links stehen */
   z-index: 1;
-  background: #1a1a1a;
+  background: var(--felt-deep);
 }
 
 .cat-header {
@@ -58,8 +94,8 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: grey;
+  border: 1px solid var(--rule);
+  color: var(--cream-dim);
   font-size: 13px;
 }
 
@@ -70,7 +106,8 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--rule);
+  color: var(--cream-dim);
   font-weight: bold;
   font-size: 11px;
 }

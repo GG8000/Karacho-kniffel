@@ -17,10 +17,13 @@ import {
 
 const PURPLE = '#673ab7'
 const LIGHT = '#b39ddb'
-const GREEN = '#69ff47'
-const RED = '#ff5252'
-const ORANGE = '#f5a623'
 const MUTED = 'rgba(255,255,255,0.55)'
+
+// Aus der Blockpalette in App.css — die Anleitung soll denselben Block zeigen,
+// den man gleich vor sich hat.
+const BONUS_OK = 'var(--bonus-ok)'
+const BONUS_MISS = 'var(--bonus-miss)'
+const ARMED = 'var(--armed)'
 
 const FOURS = 3 // Zeilenindex der Vierer — Beispielzeile für den oberen Teil
 
@@ -36,10 +39,10 @@ function Cell({ cIdx, entry, ring = false }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        border: '1px solid rgba(255,255,255,0.15)',
+        border: '1px solid var(--rule)',
         borderRadius: 4,
-        background: 'rgba(255,255,255,0.04)',
-        color: 'white',
+        background: 'var(--felt)',
+        color: 'var(--cream)',
         fontSize: 15,
       }}
     >
@@ -49,8 +52,8 @@ function Cell({ cIdx, entry, ring = false }) {
             position: 'absolute',
             inset: 4,
             borderRadius: '50%',
-            border: `2px solid ${ORANGE}`,
-            boxShadow: `0 0 6px rgba(245,166,35,0.5)`,
+            border: `2px solid var(--kniffel-gold)`,
+            boxShadow: `0 0 6px rgba(255,196,0,0.55)`,
           }}
         />
       )}
@@ -162,7 +165,7 @@ export default function Guide() {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 8px 0 16px',
-          color: 'black',
+          color: 'white',
           fontWeight: 'bold',
           letterSpacing: 2,
         }}
@@ -174,7 +177,7 @@ export default function Guide() {
           style={{
             background: 'rgba(0,0,0,0.2)',
             border: 'none',
-            color: 'black',
+            color: 'white',
             borderRadius: '50%',
             width: 28,
             height: 28,
@@ -239,9 +242,13 @@ export default function Guide() {
 
           <div style={{ color: MUTED, fontSize: 13, lineHeight: 1.55 }}>
             Die Zeile <B>SUMME</B> rechnet für dich zurück auf die gewohnte Zahl.
-            Sie wird <span style={{ color: GREEN, fontWeight: 'bold' }}>grün</span>
-            , sobald der Bonus sicher ist, und ist bis dahin{' '}
-            <span style={{ color: RED, fontWeight: 'bold' }}>rot</span>.
+            Sie leuchtet{' '}
+            <span style={{ color: BONUS_OK, fontWeight: 'bold' }}>
+              messingfarben
+            </span>
+            ,
+            sobald der Bonus sicher ist, und ist bis dahin{' '}
+            <span style={{ color: BONUS_MISS, fontWeight: 'bold' }}>rot</span>.
           </div>
         </Section>
 
@@ -292,7 +299,7 @@ export default function Guide() {
           <div style={{ color: MUTED, fontSize: 13, lineHeight: 1.55 }}>
             Eine <B>leere</B> Zelle reagiert sofort. Eine schon <B>gefüllte</B>{' '}
             wird vom ersten Tap nur markiert — sie bekommt einen{' '}
-            <span style={{ color: ORANGE, fontWeight: 'bold' }}>
+            <span style={{ color: ARMED, fontWeight: 'bold' }}>
               orangen Rahmen
             </span>
             , und erst der zweite Tap ändert sie wirklich. So kostet ein

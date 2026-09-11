@@ -114,10 +114,8 @@ export default function OnlineGame({ gameId, onExit }) {
       setModal({ cIdx })
       return
     }
-    // Außerhalb von setPending, sonst feuert die Feier im StrictMode doppelt.
-    if (step.kind === 'set' && step.entry.isKniffel) {
-      celebrateKniffel({ kind: 'upper', face: step.entry.face })
-    }
+    // Weder Feier noch Streich-Animation hier: der Zug ist nur vorgemerkt und
+    // bis "Zug bestätigen" jederzeit umtippbar. Beides feuert in confirmTurn().
     setPending(step.kind === 'set' ? { cIdx, entry: step.entry } : null)
   }
 
@@ -131,15 +129,21 @@ export default function OnlineGame({ gameId, onExit }) {
         pending.entry.value,
         pending.entry.isKniffel,
       )
-      // Erst jetzt ist die Streichung wirklich passiert — anders als lokal, wo
-      // der Tap sie schon setzt. Deshalb hier statt in handleTap, und ohne
-      // Bedenkzeit: das Bestätigen IST die Entscheidung.
-      if (!pending.fromSheet && isStruck(pending.cIdx, pending.entry)) {
-        announceStrike({
-          cIdx: pending.cIdx,
-          category: CATEGORIES[pending.cIdx],
-          playerName: players.find((p) => p.profileId === meId)?.name,
-        })
+      // Erst jetzt ist der Zug wirklich passiert — anders als lokal, wo der Tap
+      // ihn schon setzt. Deshalb hier statt in handleTap, und ohne Bedenkzeit:
+      // das Bestätigen IST die Entscheidung.
+      //
+      // fromSheet-Einträge haben ihre Meldung schon im Sheet abgesetzt.
+      if (!pending.fromSheet) {
+        if (pending.entry.isKniffel) {
+          celebrateKniffel({ kind: 'upper', face: pending.entry.face })
+        } else if (isStruck(pending.cIdx, pending.entry)) {
+          announceStrike({
+            cIdx: pending.cIdx,
+            category: CATEGORIES[pending.cIdx],
+            playerName: players.find((p) => p.profileId === meId)?.name,
+          })
+        }
       }
       setPending(null)
       load()

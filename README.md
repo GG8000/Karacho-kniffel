@@ -106,6 +106,34 @@ nicht) und `GEO_DEV_CITY=<Stadt>`, weil die Geo-Header nur auf Vercel ankommen.
   dieselbe Funktion wie der echte Block: so kann die Anleitung nicht
   auseinanderlaufen, wenn sich die Darstellung ändert.
 
+- [x] **Bilanz über der Rangliste** — die Punktebilanz gegen jeden Gegner gab es
+  schon, aber nur im Spielerdetail: man musste sich erst selbst antippen.
+  Jetzt steht sie über der Rangliste, gerendert vom vorhandenen
+  `HeadToHeadMatrix` — eine zweite Einbaustelle, keine zweite Darstellung.
+  Angemeldet ist „ich" das eigene Konto (`keyOf` über die profileId), als Gast
+  einmal auswählbar (`kniffel-me-key-v1`). Kein fünfter Tab: bei vier wird die
+  Zeile am Handy schon eng.
+- [x] **Filz & Messing statt Lila/Schwarz im Block** — die Spaltenköpfe standen
+  auf `#673ab7` mit SCHWARZER Schrift, Kontrast 2,7:1 bei einem Minimum von
+  4,5:1. Der Block ist jetzt eine eigene Fläche — dunkelgrüner Filz, Messing für
+  die Köpfe (7,9:1), Creme für die Zahlen (10,4:1). App-Bar, Menü und Statistik
+  behalten ihr Lila. Das Bonus-Grün musste weichen (grün auf grünem Filz trägt
+  nicht): SUMME schlägt jetzt von Rot auf helles Messing um. Nebenbei zwei
+  Doppelbelegungen aufgelöst — der Kniffel-Ring hat sich sein Orange bisher mit
+  dem Fehltipp-Schutz geteilt, und im Extrem-Block stand dieselbe Farbe für
+  „scharf" und „nächste Zelle". Die Palette liegt als CSS-Variablen in `:root`,
+  weil die Blockfarben teils in `App.css` und teils inline in drei Komponenten
+  stehen; die Kontrastwerte stehen als Kommentar dabei. Die Anleitung zieht mit
+  — sie sagte wörtlich „wird grün, sobald der Bonus sicher ist".
+- [x] **Kniffel-Feier im oberen Teil verzögert** — dort ist „fünf Würfel" der
+  sechste Tap beim Durchklicken. Wer einen zu weit kam, bekam die volle
+  Bildschirmfeier für etwas, das er gleich wieder wegtippte. Die Bedenkzeit aus
+  der Streich-Animation ist nach `lib/pendingCell.js` gewandert und trägt jetzt
+  beide: EIN Timer je Zelle für alle Ereignisarten, denn eine Zelle kann nicht
+  gleichzeitig gestrichen und Kniffel sein. Das Sheet bleibt sofort (bewusste
+  Bestätigung), und im Online-Modus feuert jetzt auch die Feier erst mit „Zug
+  bestätigen" statt beim Antippen — wie die Streichung.
+
 Nebenbei repariert: der freie Block („~") in Kniffel Extrem war nie anklickbar
 (`nextAllowed={null}` konnte nie `=== realIdx` sein), und eine durchgeklickte
 Zelle wäre dort nach dem ersten Tap sofort gesperrt gewesen — editierbar sind

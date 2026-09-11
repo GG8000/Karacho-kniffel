@@ -21,8 +21,9 @@ import {
   isStruck,
   nextCellState,
 } from "./logic/kniffel";
-import { celebrateKniffel } from "./lib/celebrate";
-import { armStrike, cancelStrike } from "./lib/strike";
+import { armKniffel } from "./lib/celebrate";
+import { armStrike } from "./lib/strike";
+import { cancelCellEvent } from "./lib/pendingCell";
 import { showToast } from "./lib/toast";
 import { openGuide } from "./lib/guide";
 import { useArmedCell } from "./lib/useArmedCell";
@@ -393,21 +394,24 @@ export default function App() {
       showToast({ text: "Nochmal tippen zum Ändern" });
       return;
     }
-    // Die Feier bewusst VOR setScores und außerhalb des Updaters: React ruft
-    // den Updater im StrictMode doppelt auf, die Animation liefe sonst zweimal.
+    // Beides bewusst VOR setScores und außerhalb des Updaters: React ruft den
+    // Updater im StrictMode doppelt auf, die Animation liefe sonst zweimal.
+    //
+    // Feier wie Streichung bekommen im oberen Teil Bedenkzeit — dort sind "fünf
+    // Würfel" und "gestrichen" nur Stationen beim Durchklicken 0→1→2→3→4→5
+    // (siehe lib/pendingCell.js). Ein Zellschlüssel, ein Timer: die Zelle kann
+    // nur eines von beidem sein.
+    const cellKey = `${pIdx}:${cIdx}`;
     if (step.kind === "set" && step.entry.isKniffel) {
-      celebrateKniffel({ kind: "upper", face: step.entry.face });
-    }
-    // Streichung ankündigen — oben mit Bedenkzeit, damit das Durchklicken
-    // 0→1→2→3→4→5 nicht bei jedem ersten Tap knallt (siehe lib/strike.js).
-    if (step.kind === "set" && isStruck(cIdx, step.entry)) {
-      armStrike(`${pIdx}:${cIdx}`, {
+      armKniffel(cellKey, { kind: "upper", face: step.entry.face });
+    } else if (step.kind === "set" && isStruck(cIdx, step.entry)) {
+      armStrike(cellKey, {
         cIdx,
         category: CATEGORIES[cIdx],
         playerName: players[pIdx],
       });
     } else {
-      cancelStrike(`${pIdx}:${cIdx}`);
+      cancelCellEvent(cellKey);
     }
     setScores((cur) => {
       const playerScores = { ...cur[pIdx] };
@@ -429,7 +433,7 @@ export default function App() {
   // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
   function restoreCell(pIdx, cIdx, entry) {
     disarm();
-    cancelStrike(`${pIdx}:${cIdx}`);
+    cancelCellEvent(`${pIdx}:${cIdx}`);
     setScores((cur) => {
       const playerScores = { ...cur[pIdx] };
       if (entry) playerScores[cIdx] = entry;

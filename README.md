@@ -85,6 +85,15 @@ nicht) und `GEO_DEV_CITY=<Stadt>`, weil die Geo-Header nur auf Vercel ankommen.
   Tap und „Rückgängig" nehmen sie zurück. Unten ist Streichen eine bewusste
   Eingabe und knallt sofort. Online zählt erst „Zug bestätigen", nicht der Tap.
 
+- [x] **Punkte gesamt und Punktebilanz je Gegner** — im Spielerdetail steht
+  jetzt die Summe aller je erreichten Punkte (`sumScore` wurde in `stats.js`
+  ohnehin schon für den Schnitt gebildet, nur nie angezeigt), und Head-to-Head
+  zeigt neben dem Siegstand die Punkte beider Seiten aus den gemeinsamen
+  Spielen. Beides bekommt eine eigene Farbe, weil es auseinandergehen kann:
+  viele knappe Siege schlagen wenige hohe. Bewusst KEINE Aufteilung von
+  `sumScore` — bei drei Mitspielern zählt dasselbe Ergebnis gegen jeden von
+  ihnen, die Zahl beantwortet „wie viel habe ich gegen DEN gespielt".
+
 Nebenbei repariert: der freie Block („~") in Kniffel Extrem war nie anklickbar
 (`nextAllowed={null}` konnte nie `=== realIdx` sein), und eine durchgeklickte
 Zelle wäre dort nach dem ersten Tap sofort gesperrt gewesen — editierbar sind

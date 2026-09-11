@@ -13,6 +13,7 @@ import {
   CategoryStatsView,
   OrderStatsView,
   KniffelFaceView,
+  de0,
 } from '../components/StatCharts'
 import MonthlyRecapView from '../components/MonthlyRecapView'
 import CityMap from '../components/CityMap'
@@ -271,6 +272,7 @@ export default function Statistics({ onBack }) {
                 `${Math.round(selectedPlayer.winRate * 100)}%`,
               ],
               ['🎯 Ø Punkte', selectedPlayer.avgScore],
+              ['➕ Punkte gesamt', de0(selectedPlayer.sumScore)],
               ['🥇 Bestleistung', selectedPlayer.bestScore],
               ['🎲 Kniffel gesamt', selectedPlayer.totalKniffel],
             ].map(([label, value]) => (

@@ -198,6 +198,9 @@ const CAT_ORDER = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13]
 
 const pct = (x) => `${Math.round((x ?? 0) * 100)}%`
 const de1 = (x) => (x ?? 0).toFixed(1).replace('.', ',')
+// Ganze Zahlen mit Tausenderpunkt — Punktesummen werden über viele Spiele
+// schnell fünfstellig. Auch von Statistics.jsx benutzt.
+export const de0 = (x) => Math.round(x ?? 0).toLocaleString('de-DE')
 
 // Kleine vertikale Balken für eine Verteilung: [{ label, value }]
 function MiniBars({ bars }) {
@@ -341,26 +344,59 @@ export function HeadToHeadMatrix({ opponents }) {
       {rows.map(([name, r]) => {
         const even = r.won === r.lost
         const color = even ? 'rgba(255,255,255,0.6)' : r.won > r.lost ? WIN : LOSS
+        // Die Punktebilanz kann anders ausgehen als die Siegbilanz: viele knappe
+        // Siege schlagen wenige hohe. Deshalb eine eigene Farbe.
+        const ptsEven = r.pointsFor === r.pointsAgainst
+        const ptsColor = ptsEven
+          ? 'rgba(255,255,255,0.6)'
+          : r.pointsFor > r.pointsAgainst
+            ? WIN
+            : LOSS
         return (
           <div
             key={name}
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+              flexDirection: 'column',
+              gap: 3,
               background: 'rgba(255,255,255,0.04)',
               borderRadius: 8,
               padding: '8px 12px',
             }}
           >
-            <span style={{ color: 'white' }}>{name}</span>
-            <span style={{ fontWeight: 'bold', color }}>
-              {r.won}–{r.lost}
-              <span style={{ color: MUTED, fontWeight: 'normal', fontSize: 12 }}>
-                {' '}
-                ({r.played})
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ color: 'white' }}>{name}</span>
+              <span style={{ fontWeight: 'bold', color }}>
+                {r.won}–{r.lost}
+                <span
+                  style={{ color: MUTED, fontWeight: 'normal', fontSize: 12 }}
+                >
+                  {' '}
+                  ({r.played})
+                </span>
               </span>
-            </span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: 11,
+                color: MUTED,
+              }}
+            >
+              <span>Punkte</span>
+              <span>
+                <b style={{ color: ptsColor }}>{de0(r.pointsFor)}</b>
+                {' : '}
+                {de0(r.pointsAgainst)}
+              </span>
+            </div>
           </div>
         )
       })}

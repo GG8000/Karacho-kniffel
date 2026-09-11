@@ -29,7 +29,14 @@ export function computeStats(games) {
         bestScore: 0,
         scoreHistory: [], // [{ playedAt, score, mode }]
         form: [], // [bool] chronologisch
-        opponents: {}, // { name: { played, won, lost } }
+        // { name: { played, won, lost, pointsFor, pointsAgainst } }
+        //
+        // pointsFor/pointsAgainst sind die Punkte aus den GEMEINSAMEN Spielen,
+        // keine Aufteilung von sumScore: bei drei Mitspielern zählt dasselbe
+        // Ergebnis gegen jeden von ihnen. Die Summe über alle Gegner liegt
+        // deshalb über sumScore, und das ist so gemeint — die Zahl beantwortet
+        // "wie viel habe ich gegen DEN gespielt".
+        opponents: {},
       }
       rating[key] = START_RATING
     } else if (name) {
@@ -61,8 +68,16 @@ export function computeStats(games) {
       parts.forEach((o) => {
         if (o === p) return
         const name = o.name ?? '?'
-        const rec = (s.opponents[name] ??= { played: 0, won: 0, lost: 0 })
+        const rec = (s.opponents[name] ??= {
+          played: 0,
+          won: 0,
+          lost: 0,
+          pointsFor: 0,
+          pointsAgainst: 0,
+        })
         rec.played++
+        rec.pointsFor += score
+        rec.pointsAgainst += o.finalScore ?? 0
         if (p.isWinner && !o.isWinner) rec.won++
         else if (!p.isWinner && o.isWinner) rec.lost++
       })

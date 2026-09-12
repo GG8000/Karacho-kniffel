@@ -72,19 +72,19 @@ function BlockColumn({
         display: "flex",
         flexDirection: "column",
         minWidth: 80,
-        borderLeft: "1px solid var(--rule)",
+        borderLeft: "1px solid var(--sheet-rule)",
       }}
     >
       <div
         style={{
           height: 36,
-          background: "var(--brass)",
+          background: "var(--sheet-head)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           fontSize: 11,
           fontWeight: "bold",
-          color: "var(--brass-ink)",
+          color: "var(--sheet-head-ink)",
         }}
       >
         {label}
@@ -113,17 +113,18 @@ function BlockColumn({
               alignItems: "center",
               justifyContent: "center",
               fontSize: 13,
-              // Scharf (Fehltipp-Schutz) und "hier geht es weiter" hatten
-              // bisher dieselbe Farbe. Koralle warnt, Messing weist.
-              color: isNext ? "var(--brass)" : "var(--cream)",
+              fontVariantNumeric: "tabular-nums",
+              // Scharf (Fehltipp-Schutz) und "hier geht es weiter" brauchen
+              // zwei Farben. Koralle warnt, Lila weist.
+              color: isNext ? "var(--sheet-accent)" : "var(--sheet-ink)",
               background: isArmed
                 ? "rgba(255,138,101,0.16)"
                 : isNext
-                  ? "rgba(212,162,74,0.12)"
+                  ? "rgba(179,136,255,0.14)"
                   : isAuto
-                    ? "var(--felt-raised)"
+                    ? "var(--sheet-sum)"
                     : "transparent",
-              borderBottom: "1px solid var(--rule)",
+              borderBottom: "1px solid var(--sheet-rule)",
               cursor: isClickable ? "pointer" : "default",
               fontWeight: isAuto ? "bold" : "normal",
               opacity: entry ? 1 : isNext ? 1 : 0.3,
@@ -645,7 +646,7 @@ export default function KniffelExtrem({ onExit }) {
             style={{
               height: 36,
               flexShrink: 0,
-              border: "1px solid var(--rule)",
+              border: "1px solid var(--sheet-rule)",
               borderBottom: "none",
             }}
           />
@@ -656,9 +657,10 @@ export default function KniffelExtrem({ onExit }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              border: "1px solid var(--rule)",
-              color: "var(--cream-dim)",
+              border: "1px solid var(--sheet-rule)",
+              color: "var(--sheet-ink-dim)",
               fontSize: 13,
+              letterSpacing: 0.5,
             }}
           >
             KAT
@@ -686,13 +688,13 @@ export default function KniffelExtrem({ onExit }) {
                   style={{
                     display: "flex",
                     height: 36,
-                    background: "var(--brass)",
+                    background: "var(--sheet-head)",
                     alignItems: "center",
                     justifyContent: "center",
                     fontWeight: "bold",
-                    color: "var(--brass-ink)",
+                    color: "var(--sheet-head-ink)",
                     fontSize: 12,
-                    borderLeft: "1px solid var(--rule)",
+                    borderLeft: "1px solid var(--sheet-rule)",
                   }}
                 >
                   {name} · {getTotal(pIdx)}

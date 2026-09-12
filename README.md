@@ -125,6 +125,15 @@ nicht) und `GEO_DEV_CITY=<Stadt>`, weil die Geo-Header nur auf Vercel ankommen.
   weil die Blockfarben teils in `App.css` und teils inline in drei Komponenten
   stehen; die Kontrastwerte stehen als Kommentar dabei. Die Anleitung zieht mit
   — sie sagte wörtlich „wird grün, sobald der Bonus sicher ist".
+- [x] **Block in den Farben der App** — Filz und Messing hatten den Kontrast
+  repariert, sahen aber aus wie eine andere App. Der Block steht jetzt auf
+  demselben dunklen Grau wie Hintergrund und App-Bar, die Spaltenköpfe sind Lila
+  wie die Buttons — diesmal mit WEISSER Schrift (7,3:1). SUMME schlägt wieder
+  von Rot auf Grün um (dieselben Farben wie `RatingDelta`). TOTAL und die
+  nächste Zelle im Extrem-Block stehen in hellem Lila `#b388ff`, weil `#673ab7`
+  als Schrift auf Dunkel nur 2,6:1 hätte. Ziffern sind gleich breit
+  (`tabular-nums`). Die Tokens heißen jetzt `--sheet-*` statt `--felt`/`--brass`,
+  die Kontrastwerte stehen weiter als Kommentar in `App.css`.
 - [x] **Kniffel-Feier im oberen Teil verzögert** — dort ist „fünf Würfel" der
   sechste Tap beim Durchklicken. Wer einen zu weit kam, bekam die volle
   Bildschirmfeier für etwas, das er gleich wieder wegtippte. Die Bedenkzeit aus

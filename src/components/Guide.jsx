@@ -39,11 +39,12 @@ function Cell({ cIdx, entry, ring = false }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        border: '1px solid var(--rule)',
+        border: '1px solid var(--sheet-rule)',
         borderRadius: 4,
-        background: 'var(--felt)',
-        color: 'var(--cream)',
+        background: 'var(--sheet-bg)',
+        color: 'var(--sheet-ink)',
         fontSize: 15,
+        fontVariantNumeric: 'tabular-nums',
       }}
     >
       {ring && (
@@ -242,12 +243,9 @@ export default function Guide() {
 
           <div style={{ color: MUTED, fontSize: 13, lineHeight: 1.55 }}>
             Die Zeile <B>SUMME</B> rechnet für dich zurück auf die gewohnte Zahl.
-            Sie leuchtet{' '}
-            <span style={{ color: BONUS_OK, fontWeight: 'bold' }}>
-              messingfarben
-            </span>
-            ,
-            sobald der Bonus sicher ist, und ist bis dahin{' '}
+            Sie wird{' '}
+            <span style={{ color: BONUS_OK, fontWeight: 'bold' }}>grün</span>
+            , sobald der Bonus sicher ist, und ist bis dahin{' '}
             <span style={{ color: BONUS_MISS, fontWeight: 'bold' }}>rot</span>.
           </div>
         </Section>

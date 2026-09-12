@@ -12,11 +12,12 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
   }
 
   return (
-    <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--rule)' }}>
+    <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--sheet-rule)' }}>
       <div style={{
-        height: 50, flexShrink: 0, background: 'var(--brass)',
+        height: 50, flexShrink: 0, background: 'var(--sheet-head)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 'bold', color: 'var(--brass-ink)', fontSize: 14,
+        fontWeight: 'bold', color: 'var(--sheet-head-ink)', fontSize: 14,
+        letterSpacing: 0.3,
         position: 'relative', padding: '0 24px 0 4px',
         overflow: 'hidden',
       }}>
@@ -30,8 +31,8 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
             style={{
               position: 'absolute', right: 4, top: '50%',
               transform: 'translateY(-50%)',
-              background: 'rgba(0,0,0,0.2)', border: 'none',
-              color: 'var(--brass-ink)', borderRadius: '50%',
+              background: 'rgba(0,0,0,0.25)', border: 'none',
+              color: 'var(--sheet-head-ink)', borderRadius: '50%',
               width: 18, height: 18, fontSize: 10,
               cursor: 'pointer', display: 'flex',
               alignItems: 'center', justifyContent: 'center',
@@ -51,11 +52,13 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
         const hasUpperEntry = isUpperDice && !!entry
         const hasKniffelBonus = entry?.isKniffel === true  // ← das hat gefehlt
 
-        // Bonus erreicht/verfehlt heißt jetzt Messing gegen Rot: das alte
-        // Grün ginge auf grünem Filz unter.
-        let color = 'var(--cream)'
+        // Bonus erreicht/verfehlt: Grün gegen Rot, wie in RatingDelta. TOTAL in
+        // hellem Lila — #673ab7 selbst wäre als Schrift auf Dunkel zu schwach.
+        let color = 'var(--sheet-ink)'
         if (isUpperSum && entry) {
           color = absolutePoints >= 63 ? 'var(--bonus-ok)' : 'var(--bonus-miss)'
+        } else if (isTotalRow) {
+          color = 'var(--sheet-accent)'
         }
 
         return (
@@ -71,13 +74,15 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               justifyContent: 'center',
               fontSize: 16,
               fontWeight: isSumRow ? 'bold' : 'normal',
-              
+              // Gleich breite Ziffern, damit +1 und −2 untereinander ruhig stehen.
+              fontVariantNumeric: 'tabular-nums',
+
               borderBottom: isUpperSum
-                ? '2px solid var(--brass)'
-                : '1px solid var(--rule)',
-              borderRight: '1px solid var(--rule)',
+                ? '2px solid var(--sheet-accent)'
+                : '1px solid var(--sheet-rule)',
+              borderRight: '1px solid var(--sheet-rule)',
               backgroundColor: isSumRow
-                ? 'var(--felt-raised)'
+                ? 'var(--sheet-sum)'
                 : cIdx === armedCIdx
                   ? 'rgba(255,138,101,0.16)'
                   : 'transparent',

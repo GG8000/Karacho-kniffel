@@ -5,34 +5,38 @@
 }
 
 /* --- Farben des Blocks ----------------------------------------------------
-   Der Block ist bewusst eine eigene Fläche — ein Zettel auf dem Tisch. App-Bar,
-   Menü und Statistik behalten ihr Lila.
+   Der Block trägt die Farben der App: dunkles Grau wie Hintergrund und App-Bar,
+   Lila wie die Buttons. Filz und Messing (3073100) hatten den Kontrast
+   repariert, sahen aber aus wie eine andere App.
 
-   Vorher standen die Spaltenkoepfe auf #673ab7 mit SCHWARZER Schrift: Kontrast
-   2,7:1, das Minimum liegt bei 4,5:1. Die Werte unten sind durchgerechnet und
-   stehen als Kommentar dabei, damit sie beim nächsten Umbau nicht still
-   verlorengehen.
+   Der Fehler von davor bleibt ausgeschlossen: die Spaltenköpfe standen auf
+   #673ab7 mit SCHWARZER Schrift, 2,7:1 bei einem Minimum von 4,5:1. Mit weißer
+   Schrift sind es 7,3:1. Die Werte unten sind durchgerechnet und stehen als
+   Kommentar dabei, damit sie beim nächsten Umbau nicht still verlorengehen.
 
    Als Custom Properties, weil die Blockfarben teils hier und teils inline in
    PlayerColumn, KniffelExtrem und Guide stehen — so gibt es trotzdem nur eine
    Quelle. */
 :root {
-  --felt: #1b3a2f;          /* Zellfläche */
-  --felt-deep: #153028;     /* Kategorie-Spalte */
-  --felt-raised: #224a3b;   /* SUMME- und TOTAL-Zeilen */
-  --rule: rgba(242, 237, 227, 0.15); /* Gitterlinien, warm statt kalt */
+  --sheet-bg: #121212;      /* Zellfläche, wie der App-Hintergrund */
+  --sheet-side: #1a1a1a;    /* Kategorie-Spalte — deckend, sie ist sticky */
+  --sheet-sum: #21192f;     /* SUMME/TOTAL: 18 % Lila auf #121212, deckend */
+  --sheet-rule: rgba(255, 255, 255, 0.08); /* Gitterlinien */
 
-  --brass: #d4a24a;         /* Spaltenkopf, nächste Zelle */
-  --brass-ink: #1a1a17;     /* Schrift auf Messing        — 7,9:1 */
-  --cream: #f2ede3;         /* Zellschrift, TOTAL         — 10,4:1 auf Filz */
-  --cream-dim: rgba(242, 237, 227, 0.65); /* Kategorie-Beschriftung — 6,0:1 */
+  --sheet-head: #673ab7;    /* Spaltenkopf, wie btn-primary */
+  --sheet-head-ink: #fff;   /* Schrift auf Lila           — 7,3:1 */
+  --sheet-ink: #fff;        /* Zellschrift                — 18,7:1 */
+  --sheet-ink-dim: rgba(255, 255, 255, 0.7); /* Kategorien — 9,0:1 */
 
-  /* Das alte Bonus-Grün fällt weg: grün auf grünem Filz trägt nicht. */
-  --bonus-ok: #ffd479;      /* SUMME >= 63                — 8,8:1 */
-  --bonus-miss: #ff8a80;    /* SUMME <  63                — 5,4:1 */
+  /* #673ab7 als SCHRIFT auf Dunkel hätte nur 2,6:1 — Lila im Text daher hell. */
+  --sheet-accent: #b388ff;  /* TOTAL, nächste Zelle       — 6,3:1 auf SUMME-Zeile */
 
-  /* Früher teilten sich Kniffel-Ring und Fehltipp-Schutz dasselbe Orange.
-     Zwei Bedeutungen, zwei Farben. */
+  /* Grün und Rot wie in RatingDelta und StatCharts. */
+  --bonus-ok: #69ff47;      /* SUMME >= 63                — 12,8:1 */
+  --bonus-miss: #ff5252;    /* SUMME <  63                — 5,3:1 */
+
+  /* Kniffel-Ring und Fehltipp-Schutz bleiben getrennt: zwei Bedeutungen, zwei
+     Farben. */
   --kniffel-gold: #ffc400;  /* wie in der Kniffel-Feier */
   --armed: #ff8a65;         /* scharfe bzw. vorgemerkte Zelle */
 }
@@ -71,9 +75,9 @@ html, body, #root {
   min-height: 0;
   overflow-x: auto;
   overflow-y: auto;
-  /* Die Zellen selbst sind durchsichtig — der Filz kommt von hier, und bleibt
+  /* Die Zellen selbst sind durchsichtig — die Fläche kommt von hier, und bleibt
      damit auch neben der letzten Spalte stehen. */
-  background: var(--felt);
+  background: var(--sheet-bg);
 }
 
 .categories-column {
@@ -85,7 +89,7 @@ html, body, #root {
   position: sticky;
   left: 0;           /* ← bleibt beim horizontalen Scrollen links stehen */
   z-index: 1;
-  background: var(--felt-deep);
+  background: var(--sheet-side);
 }
 
 .cat-header {
@@ -94,9 +98,10 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--rule);
-  color: var(--cream-dim);
+  border: 1px solid var(--sheet-rule);
+  color: var(--sheet-ink-dim);
   font-size: 13px;
+  letter-spacing: 0.5px;
 }
 
 .cat-cell {
@@ -106,10 +111,11 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--rule);
-  color: var(--cream-dim);
+  border: 1px solid var(--sheet-rule);
+  color: var(--sheet-ink-dim);
   font-weight: bold;
   font-size: 11px;
+  letter-spacing: 0.5px;
 }
 
 .players-area {

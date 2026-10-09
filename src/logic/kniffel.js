@@ -58,8 +58,9 @@ export function kniffelFaceFor(value) {
 //   { kind: 'sheet' }       Rad bzw. Würfelauswahl öffnen
 //   null                    nicht antippbar (SUMME / TOTAL)
 //
-// Oben zählt jeder Tap eine Würfelanzahl weiter: 1. Tap = 0 Würfel
-// (gestrichen), 6. Tap = 5 Würfel (Kniffel), 7. Tap = wieder leer.
+// Oben zählt jeder Tap eine Würfelanzahl weiter: 1. Tap = 1 Würfel, 5. Tap =
+// 5 Würfel (Kniffel), 6. Tap = gestrichen, 7. Tap = wieder leer. Ein langer
+// Druck streicht direkt (siehe strikeStep).
 export function nextCellState(cIdx, entry) {
   if (SUM_INDICES.includes(cIdx)) return null
 
@@ -69,9 +70,10 @@ export function nextCellState(cIdx, entry) {
   const timestamp = entry?.timestamp ?? Date.now()
 
   if (UPPER_INDICES.includes(cIdx)) {
-    const count = entry ? upperCount(cIdx, entry.value) : -1
-    const next = count + 1
-    if (next > 5) return { kind: 'clear' }
+    // leer -> 1 -> 2 -> 3 -> 4 -> 5 -> gestrichen (0) -> leer.
+    const count = entry ? upperCount(cIdx, entry.value) : null
+    if (count === 0) return { kind: 'clear' }
+    const next = count === null ? 1 : count === 5 ? 0 : count + 1
     return {
       kind: 'set',
       entry: {
@@ -145,4 +147,15 @@ export function isBoardComplete(playerIds, scoresByPlayer) {
       PLAYABLE_INDICES.every((ci) => scoresByPlayer[pid]?.[ci] !== undefined),
     )
   )
+}
+
+// Zielzustand eines langen Drucks: die Zelle direkt streichen. null, wo es
+// nichts zu streichen gibt (Summenzeilen, Sheet-Zellen).
+export function strikeStep(cIdx, entry) {
+  if (!UPPER_INDICES.includes(cIdx) && !FIXED_INDICES.includes(cIdx)) return null
+  const timestamp = entry?.timestamp ?? Date.now()
+  return {
+    kind: 'set',
+    entry: { value: cIdx <= 5 ? upperValue(cIdx, 0) : 0, timestamp, isKniffel: false, face: null },
+  }
 }

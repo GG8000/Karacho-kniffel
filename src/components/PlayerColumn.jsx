@@ -1,8 +1,27 @@
+import { useRef } from 'react'
 import { calculateUpperAbsolutePoints } from '../logic/calculator'
 import { formatCell } from '../logic/kniffel'
 
-export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap, onRemove, canEdit = true, pendingCIdx = null, armedCIdx = null }) {
+export default function PlayerColumn({ pIdx, name, categories, playerScores, onTap, onLongPress, onRemove, canEdit = true, pendingCIdx = null, armedCIdx = null }) {
   const absolutePoints = calculateUpperAbsolutePoints(playerScores)
+
+  // Langer Druck streicht die Zelle; der Klick, der danach noch folgt, wird
+  // verschluckt, sonst würde er den Zyklus gleich weiterschalten.
+  const pressTimer = useRef(null)
+  const longFired = useRef(false)
+  function startPress(cIdx) {
+    longFired.current = false
+    if (!onLongPress) return
+    clearTimeout(pressTimer.current)
+    pressTimer.current = setTimeout(() => {
+      longFired.current = true
+      navigator.vibrate?.(30)
+      onLongPress(pIdx, cIdx)
+    }, 500)
+  }
+  function endPress() {
+    clearTimeout(pressTimer.current)
+  }
 
   function getCellText(cIdx) {
     const cat = categories[cIdx]
@@ -64,7 +83,15 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
         return (
           <div
             key={cIdx}
-            onClick={isSumRow || !canEdit ? undefined : () => onTap(pIdx, cIdx)}
+            onClick={isSumRow || !canEdit ? undefined : () => {
+              if (longFired.current) { longFired.current = false; return }
+              onTap(pIdx, cIdx)
+            }}
+            onPointerDown={isSumRow || !canEdit ? undefined : () => startPress(cIdx)}
+            onPointerUp={endPress}
+            onPointerLeave={endPress}
+            onPointerCancel={endPress}
+            onContextMenu={(e) => e.preventDefault()}
             style={{
               flex: 1,
               minHeight: 40,
@@ -89,6 +116,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               color,
               cursor: isSumRow || !canEdit ? 'default' : 'pointer',
               userSelect: 'none',
+              WebkitTouchCallout: 'none',
               WebkitTapHighlightColor: 'transparent',
               position: 'relative',
             }}

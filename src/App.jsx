@@ -20,6 +20,7 @@ import {
   PLAYABLE_INDICES,
   isStruck,
   nextCellState,
+  strikeStep,
 } from "./logic/kniffel";
 import { armKniffel } from "./lib/celebrate";
 import { armStrike } from "./lib/strike";
@@ -377,9 +378,16 @@ export default function App() {
 
   // Tap auf eine Zelle: oberer Teil und feste Punktzahlen klicken direkt durch,
   // 3er/4er/CHNC und die Kniffel-Zeile öffnen das Sheet.
-  function handleTap(pIdx, cIdx) {
+  // Langer Druck: direkt streichen, ohne den Tap-Zyklus durchzugehen.
+  function handleLongPress(pIdx, cIdx) {
     const prev = scores[pIdx]?.[cIdx];
-    const step = nextCellState(cIdx, prev);
+    if (prev && isStruck(cIdx, prev)) return;
+    handleTap(pIdx, cIdx, strikeStep(cIdx, prev), true);
+  }
+
+  function handleTap(pIdx, cIdx, forcedStep = null, skipArm = false) {
+    const prev = scores[pIdx]?.[cIdx];
+    const step = forcedStep ?? nextCellState(cIdx, prev);
     if (!step) return;
     if (step.kind === "sheet") {
       // Das Sheet ändert von sich aus noch nichts — kein Schutz nötig.
@@ -390,7 +398,7 @@ export default function App() {
     // Ein Tap auf eine schon gefuellte Zelle markiert sie nur; erst der zweite
     // ändert wirklich. Beim Durchklicken bleibt dieselbe Zelle scharf, 0→1→2→3→
     // 4→5 Würfel läuft also in einem Rutsch durch.
-    if (!requestEdit(`${pIdx}:${cIdx}`, !!prev)) {
+    if (!skipArm && !requestEdit(`${pIdx}:${cIdx}`, !!prev)) {
       showToast({ text: "Nochmal tippen zum Ändern" });
       return;
     }
@@ -801,6 +809,7 @@ export default function App() {
               categories={CATEGORIES}
               playerScores={scores[pIdx] || {}}
               onTap={handleTap}
+              onLongPress={handleLongPress}
               armedCIdx={armedFor(pIdx)}
               onRemove={() => setRemoveDialog(pIdx)} // NEU
             />

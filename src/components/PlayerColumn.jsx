@@ -116,6 +116,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               color,
               cursor: isSumRow || !canEdit ? 'default' : 'pointer',
               userSelect: 'none',
+              WebkitUserSelect: 'none',
               WebkitTouchCallout: 'none',
               WebkitTapHighlightColor: 'transparent',
               position: 'relative',

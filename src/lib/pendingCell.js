@@ -37,3 +37,10 @@ export function cancelCellEvent(key) {
   clearTimeout(timer)
   pending.delete(key)
 }
+
+// Nimmt ALLE angemeldeten Ereignisse zurück — beim schrittweisen Rückgängig
+// weiß der Aufrufer nicht, welche Zellen der Schritt berührt.
+export function cancelAllCellEvents() {
+  for (const timer of pending.values()) clearTimeout(timer)
+  pending.clear()
+}

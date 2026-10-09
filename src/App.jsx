@@ -28,6 +28,7 @@ import { cancelCellEvent } from "./lib/pendingCell";
 import { showToast } from "./lib/toast";
 import { openGuide } from "./lib/guide";
 import { useArmedCell } from "./lib/useArmedCell";
+import { useScoresHistory } from "./lib/useScoresHistory";
 import {
   saveGame,
   syncPending,
@@ -229,7 +230,8 @@ export default function App() {
   const [identities, setIdentities] = useState([]);
   const [pending, setPending] = useState(null); // vorgemerkter Account
   const [friendDialog, setFriendDialog] = useState(false);
-  const [scores, setScores] = useState({});
+  // Punktestand samt Verlauf für den Rückgängig-Knopf (lib/useScoresHistory.js).
+  const { scores, setScores, undo, canUndo } = useScoresHistory({});
   const [modal, setModal] = useState(null);
   const [addDialog, setAddDialog] = useState(false);
   const [removeDialog, setRemoveDialog] = useState(false); // NEU
@@ -242,6 +244,11 @@ export default function App() {
 
   // Fehltipp-Schutz für schon gefüllte Zellen (siehe lib/useArmedCell.js).
   const { armed, requestEdit, disarm } = useArmedCell();
+
+  function handleUndo() {
+    disarm();
+    undo();
+  }
 
   // Abgeleitet statt State: sonst müsste mitten im setScores-Updater State
   // gesetzt werden, und genau dafür stand hier früher ein setTimeout.
@@ -427,27 +434,6 @@ export default function App() {
       else delete playerScores[cIdx];
       return { ...cur, [pIdx]: refreshTotals(playerScores) };
     });
-    // Nur bei einer echten Änderung — das bloße Füllen einer leeren Zelle ist
-    // der Normalfall und braucht kein Rückgängig.
-    if (prev) {
-      showToast({
-        text: "Geändert",
-        actionLabel: "Rückgängig",
-        onAction: () => restoreCell(pIdx, cIdx, prev),
-      });
-    }
-  }
-
-  // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
-  function restoreCell(pIdx, cIdx, entry) {
-    disarm();
-    cancelCellEvent(`${pIdx}:${cIdx}`);
-    setScores((cur) => {
-      const playerScores = { ...cur[pIdx] };
-      if (entry) playerScores[cIdx] = entry;
-      else delete playerScores[cIdx];
-      return { ...cur, [pIdx]: refreshTotals(playerScores) };
-    });
   }
 
   function removeScore(pIdx, cIdx) {
@@ -459,24 +445,29 @@ export default function App() {
     setModal(null);
   }
 
-  function handleAddPlayer() {
-    const name = newName.trim();
+  // Legt den Spieler sofort an. Spieler gehören nicht zum Rückgängig-Verlauf,
+  // die Spalte wird aber in alle gemerkten Stände nachgetragen ('all').
+  function addPlayerNamed(rawName, account) {
+    const name = rawName.trim();
     if (!name) return;
     const idx = players.length;
     setPlayers((prev) => [...prev, name]);
-    setIdentities((prev) => [...prev, pending?.id ?? null]);
-    setScores((prev) => ({ ...prev, [idx]: {} }));
+    setIdentities((prev) => [...prev, account?.id ?? null]);
+    setScores((prev) => ({ ...prev, [idx]: {} }), "all");
     setNewName("");
     setPending(null);
     setAddDialog(false);
   }
 
-  // Übernimmt einen Vorschlag ins Namensfeld. Nur ein echter Account wird
-  // vorgemerkt — aus der "schon gespielt"-Liste kommen auch reine Gastnamen,
-  // die keiner Identität entsprechen.
+  function handleAddPlayer() {
+    addPlayerNamed(newName, pending);
+  }
+
+  // Ein Vorschlag (Ich / Freund / Code / "schon gespielt") wird direkt
+  // hinzugefügt, ohne zweite Bestätigung. Nur ein echter Account wird
+  // verknüpft — aus der "schon gespielt"-Liste kommen auch reine Gastnamen.
   function prefill(p) {
-    setNewName(p.display_name);
-    setPending(p.id ? p : null);
+    addPlayerNamed(p.display_name, p.id ? p : null);
   }
 
   // NEU: Spieler entfernen — reindiziert alle Scores danach
@@ -492,7 +483,7 @@ export default function App() {
         }
       });
       return newScores;
-    });
+    }, "all");
     setRemoveDialog(false);
   }
 
@@ -574,7 +565,7 @@ export default function App() {
     try {
       await saveGame(buildGamePayload());
       refreshTypical();
-      setScores(Object.fromEntries(players.map((_, i) => [i, {}])));
+      setScores(Object.fromEntries(players.map((_, i) => [i, {}])), "reset");
       setShowResult(false);
     } finally {
       setSaving(false);
@@ -591,7 +582,7 @@ export default function App() {
       }
       setPlayers([]);
       setIdentities([]);
-      setScores({});
+      setScores({}, "reset");
       setRestartDialog(false);
       setShowResult(false);
     } finally {
@@ -603,7 +594,7 @@ export default function App() {
     setScreen("modeSelect");
     setPlayers([]);
     setIdentities([]);
-    setScores({});
+    setScores({}, "reset");
     setShowResult(false);
   }
 
@@ -820,6 +811,14 @@ export default function App() {
       <div className="footer">
         <button className="btn-danger" onClick={() => setRestartDialog(true)}>
           RESTART
+        </button>
+        <button
+          className="btn-undo"
+          onClick={handleUndo}
+          disabled={!canUndo}
+          aria-label="Letzten Eintrag rückgängig machen"
+        >
+          ↶
         </button>
         {/* Wenn Spiel fertig aber Auswertung weggeklickt — Auswerten Button zeigen */}
         {gameComplete ? (

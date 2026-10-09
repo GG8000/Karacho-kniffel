@@ -36,6 +36,10 @@ export default function OnlineGame({ gameId, onExit }) {
   // Zelle einmalig und schaltet den Zug weiter, ein Tap pro Klick würde sie
   // beim zweiten Mal ablehnen.
   const [pending, setPending] = useState(null)
+  // Schritte davor, für den Rückgängig-Knopf. Abgeschickte Züge liegen auf dem
+  // Server und lassen sich nicht zurücknehmen — rückgängig geht nur, was noch
+  // lokal vorgemerkt ist.
+  const [pendingHistory, setPendingHistory] = useState([])
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -60,7 +64,20 @@ export default function OnlineGame({ gameId, onExit }) {
   // stünde er beim nächsten eigenen Zug in der falschen Zelle.
   useEffect(() => {
     setPending(null)
+    setPendingHistory([])
   }, [game?.current_turn])
+
+  // Jede Änderung am vorgemerkten Zug legt den Stand davor auf den Verlauf.
+  function changePending(next) {
+    setPendingHistory((h) => [...h, pending])
+    setPending(next)
+  }
+
+  function handleUndo() {
+    if (!pendingHistory.length) return
+    setPending(pendingHistory[pendingHistory.length - 1])
+    setPendingHistory((h) => h.slice(0, -1))
+  }
 
   // Zellen nach Spieler gruppieren
   const scoresByPlayer = {}
@@ -92,7 +109,7 @@ export default function OnlineGame({ gameId, onExit }) {
   // Sheet-Kategorien (3er/4er/CHNC, Kniffel) merken den Wert nur vor — abgeschickt
   // wird wie beim Durchklicken erst mit "Zug bestätigen".
   function handleSave(val, isKniffel, face = null) {
-    setPending({
+    changePending({
       cIdx: modal.cIdx,
       // fromSheet: dort hat das Sheet eine Streichung schon gemeldet, genau wie
       // es die Kniffel-Feier schon abgefeuert hat — confirmTurn darf sie nicht
@@ -116,7 +133,7 @@ export default function OnlineGame({ gameId, onExit }) {
     }
     // Weder Feier noch Streich-Animation hier: der Zug ist nur vorgemerkt und
     // bis "Zug bestätigen" jederzeit umtippbar. Beides feuert in confirmTurn().
-    setPending(step.kind === 'set' ? { cIdx, entry: step.entry } : null)
+    changePending(step.kind === 'set' ? { cIdx, entry: step.entry } : null)
   }
 
   async function confirmTurn() {
@@ -146,6 +163,7 @@ export default function OnlineGame({ gameId, onExit }) {
         }
       }
       setPending(null)
+      setPendingHistory([])
       load()
     } catch (e) {
       setError(e.message ?? 'Zug nicht möglich.')
@@ -408,10 +426,21 @@ export default function OnlineGame({ gameId, onExit }) {
           <>
             <button
               className="btn-danger"
-              onClick={() => setPending(null)}
+              onClick={() => {
+                setPending(null)
+                setPendingHistory([])
+              }}
               disabled={submitting}
             >
               Verwerfen
+            </button>
+            <button
+              className="btn-undo"
+              onClick={handleUndo}
+              disabled={submitting || !pendingHistory.length}
+              aria-label="Letzten Schritt rückgängig machen"
+            >
+              ↶
             </button>
             <button
               className="btn-primary"

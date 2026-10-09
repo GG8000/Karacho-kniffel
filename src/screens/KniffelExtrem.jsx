@@ -19,6 +19,7 @@ import { cancelCellEvent } from "../lib/pendingCell";
 import { showToast } from "../lib/toast";
 import { openGuide } from "../lib/guide";
 import { useArmedCell } from "../lib/useArmedCell";
+import { useScoresHistory } from "../lib/useScoresHistory";
 import { saveGame, toParticipants } from "../storage";
 import { useRatingPreview } from "../lib/useRatingPreview";
 import RatingDelta from "../components/RatingDelta";
@@ -157,12 +158,18 @@ export default function KniffelExtrem({ onExit }) {
   const [pending, setPending] = useState(null); // vorgemerkter Account
   const [friendDialog, setFriendDialog] = useState(false);
   const [newName, setNewName] = useState("");
-  const [scores, setScores] = useState({});
+  // Punktestand samt Verlauf für den Rückgängig-Knopf (lib/useScoresHistory.js).
+  const { scores, setScores, undo, canUndo } = useScoresHistory({});
   const [modal, setModal] = useState(null);
   const [restartDialog, setRestartDialog] = useState(false);
   const [saving, setSaving] = useState(false); // sperrt die Speichern-Buttons
   // Fehltipp-Schutz für schon gefüllte Zellen (siehe lib/useArmedCell.js).
   const { armed, requestEdit, disarm } = useArmedCell();
+
+  function handleUndo() {
+    disarm();
+    undo();
+  }
 
   // armed ist "<pIdx>:<block>:<cIdx>" — die Spalte will nur ihren eigenen Index.
   function armedFor(pIdx, block) {
@@ -188,22 +195,27 @@ export default function KniffelExtrem({ onExit }) {
   // Revanche dieselbe Form.
   const emptyBlocks = () => ({ topDown: {}, bottomUp: {}, normal: {} });
 
-  function addPlayer() {
-    const name = newName.trim();
+  // Spieler gehören nicht zum Rückgängig-Verlauf, die Spalte wird aber in alle
+  // gemerkten Stände nachgetragen ('all').
+  function addPlayerNamed(rawName, account) {
+    const name = rawName.trim();
     if (!name) return;
     const idx = players.length;
     setPlayers((prev) => [...prev, name]);
-    setIdentities((prev) => [...prev, pending?.id ?? null]);
-    setScores((prev) => ({ ...prev, [idx]: emptyBlocks() }));
+    setIdentities((prev) => [...prev, account?.id ?? null]);
+    setScores((prev) => ({ ...prev, [idx]: emptyBlocks() }), "all");
     setNewName("");
     setPending(null);
   }
 
-  // Übernimmt einen Vorschlag ins Namensfeld. Nur ein echter Account wird
-  // vorgemerkt — aus der "schon gespielt"-Liste kommen auch reine Gastnamen.
+  function addPlayer() {
+    addPlayerNamed(newName, pending);
+  }
+
+  // Ein Vorschlag (Ich / Freund / Code / "schon gespielt") wird direkt
+  // hinzugefügt. Nur ein echter Account wird verknüpft.
   function prefill(p) {
-    setNewName(p.display_name);
-    setPending(p.id ? p : null);
+    addPlayerNamed(p.display_name, p.id ? p : null);
   }
 
   function updateScore(pIdx, block, cIdx, value, isKniffel = false) {
@@ -252,28 +264,6 @@ export default function KniffelExtrem({ onExit }) {
     setScores((cur) => {
       const blockScores = { ...cur[pIdx][block] };
       if (step.kind === "set") blockScores[cIdx] = step.entry;
-      else delete blockScores[cIdx];
-      return {
-        ...cur,
-        [pIdx]: { ...cur[pIdx], [block]: refreshTotals(blockScores) },
-      };
-    });
-    if (prev) {
-      showToast({
-        text: "Geändert",
-        actionLabel: "Rückgängig",
-        onAction: () => restoreCell(pIdx, block, cIdx, prev),
-      });
-    }
-  }
-
-  // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
-  function restoreCell(pIdx, block, cIdx, entry) {
-    disarm();
-    cancelCellEvent(`${pIdx}:${block}:${cIdx}`);
-    setScores((cur) => {
-      const blockScores = { ...cur[pIdx][block] };
-      if (entry) blockScores[cIdx] = entry;
       else delete blockScores[cIdx];
       return {
         ...cur,
@@ -351,6 +341,7 @@ export default function KniffelExtrem({ onExit }) {
       await saveGame(buildGamePayload());
       setScores(
         Object.fromEntries(players.map((_, i) => [i, emptyBlocks()])),
+        "reset",
       );
       setShowResult(false);
     } finally {
@@ -361,7 +352,7 @@ export default function KniffelExtrem({ onExit }) {
   function handleRestart() {
     setPlayers([]);
     setIdentities([]);
-    setScores({});
+    setScores({}, "reset");
     setPhase("setup");
     setShowResult(false);
     setRestartDialog(false);
@@ -737,6 +728,14 @@ export default function KniffelExtrem({ onExit }) {
       <div className="footer">
         <button className="btn-danger" onClick={() => setRestartDialog(true)}>
           RESTART
+        </button>
+        <button
+          className="btn-undo"
+          onClick={handleUndo}
+          disabled={!canUndo}
+          aria-label="Letzten Eintrag rückgängig machen"
+        >
+          ↶
         </button>
         <button className="btn-primary" onClick={openResult}>
           AUSWERTEN →

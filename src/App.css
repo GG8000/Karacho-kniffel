@@ -669,3 +669,21 @@ input, textarea, [contenteditable] {
   pointer-events: none;
   z-index: 1;
 }
+
+/* Rückgängig-Knopf in der Fußzeile: nur das Symbol, damit RESTART und der
+   Hauptknopf Platz behalten. */
+.btn-undo {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: white;
+  width: 48px;
+  min-height: 44px;
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.btn-undo:disabled {
+  opacity: 0.3;
+  cursor: default;
+}

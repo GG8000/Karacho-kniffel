@@ -14,6 +14,7 @@ import { cancelCellEvent } from "../lib/pendingCell";
 import { showToast } from "../lib/toast";
 import { openGuide } from "../lib/guide";
 import { useArmedCell } from "../lib/useArmedCell";
+import { useScoresHistory } from "../lib/useScoresHistory";
 import { saveGame, toParticipants } from "../storage";
 import { useRatingPreview } from "../lib/useRatingPreview";
 import RatingDelta from "../components/RatingDelta";
@@ -35,11 +36,17 @@ export default function LuckyScoreGame({ onExit }) {
   const [pending, setPending] = useState(null); // vorgemerkter Account
   const [friendDialog, setFriendDialog] = useState(false);
   const [predictions, setPredictions] = useState({});
-  const [scores, setScores] = useState({});
+  // Punktestand samt Verlauf für den Rückgängig-Knopf (lib/useScoresHistory.js).
+  const { scores, setScores, undo, canUndo } = useScoresHistory({});
   const [modal, setModal] = useState(null);
   const [restartDialog, setRestartDialog] = useState(false);
   // Fehltipp-Schutz für schon gefüllte Zellen (siehe lib/useArmedCell.js).
   const { armed, requestEdit, disarm } = useArmedCell();
+
+  function handleUndo() {
+    disarm();
+    undo();
+  }
 
   // armed ist "<pIdx>:<cIdx>" — die Spalte will nur ihren eigenen Index.
   function armedFor(pIdx) {
@@ -65,26 +72,37 @@ export default function LuckyScoreGame({ onExit }) {
     active: phase === "result",
   });
 
-  function addPlayer() {
-    const name = newName.trim();
-    const pred = parseInt(newPrediction);
+  // Spieler gehören nicht zum Rückgängig-Verlauf, die Spalte wird aber in alle
+  // gemerkten Stände nachgetragen ('all').
+  function addPlayerNamed(rawName, account, pred) {
+    const name = rawName.trim();
     if (!name || isNaN(pred)) return;
     const idx = players.length;
     setPlayers((prev) => [...prev, name]);
-    setIdentities((prev) => [...prev, pending?.id ?? null]);
+    setIdentities((prev) => [...prev, account?.id ?? null]);
     setPredictions((prev) => ({ ...prev, [idx]: pred }));
-    setScores((prev) => ({ ...prev, [idx]: {} }));
+    setScores((prev) => ({ ...prev, [idx]: {} }), "all");
     setNewName("");
     setNewPrediction("");
     setPending(null);
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
-  // Übernimmt einen Vorschlag ins Namensfeld. Nur ein echter Account wird
-  // vorgemerkt — aus der "schon gespielt"-Liste kommen auch reine Gastnamen.
+  function addPlayer() {
+    addPlayerNamed(newName, pending, parseInt(newPrediction));
+  }
+
+  // Ein Vorschlag wird direkt hinzugefügt, sobald der Score-Tipp eingetragen
+  // ist (ohne Tipp kann Lucky Score keinen Spieler anlegen) — sonst wird der
+  // Name nur vorbelegt. Nur ein echter Account wird verknüpft.
   function prefill(p) {
-    setNewName(p.display_name);
-    setPending(p.id ? p : null);
+    const pred = parseInt(newPrediction);
+    if (isNaN(pred)) {
+      setNewName(p.display_name);
+      setPending(p.id ? p : null);
+      return;
+    }
+    addPlayerNamed(p.display_name, p.id ? p : null, pred);
   }
 
   function updateScore(pIdx, cIdx, value, isKniffel = false) {
@@ -130,25 +148,6 @@ export default function LuckyScoreGame({ onExit }) {
     setScores((cur) => {
       const playerScores = { ...cur[pIdx] };
       if (step.kind === "set") playerScores[cIdx] = step.entry;
-      else delete playerScores[cIdx];
-      return { ...cur, [pIdx]: refreshTotals(playerScores) };
-    });
-    if (prev) {
-      showToast({
-        text: "Geändert",
-        actionLabel: "Rückgängig",
-        onAction: () => restoreCell(pIdx, cIdx, prev),
-      });
-    }
-  }
-
-  // Stellt den Stand vor dem letzten Tap wieder her (Rückgängig-Toast).
-  function restoreCell(pIdx, cIdx, entry) {
-    disarm();
-    cancelCellEvent(`${pIdx}:${cIdx}`);
-    setScores((cur) => {
-      const playerScores = { ...cur[pIdx] };
-      if (entry) playerScores[cIdx] = entry;
       else delete playerScores[cIdx];
       return { ...cur, [pIdx]: refreshTotals(playerScores) };
     });
@@ -199,7 +198,7 @@ export default function LuckyScoreGame({ onExit }) {
     setPlayers([]);
     setIdentities([]);
     setPredictions({});
-    setScores({});
+    setScores({}, "reset");
     setPhase("setup");
     setRestartDialog(false);
   }
@@ -494,6 +493,14 @@ export default function LuckyScoreGame({ onExit }) {
       <div className="footer">
         <button className="btn-danger" onClick={() => setRestartDialog(true)}>
           RESTART
+        </button>
+        <button
+          className="btn-undo"
+          onClick={handleUndo}
+          disabled={!canUndo}
+          aria-label="Letzten Eintrag rückgängig machen"
+        >
+          ↶
         </button>
         <button className="btn-primary" onClick={() => setPhase("result")}>
           AUSWERTEN →

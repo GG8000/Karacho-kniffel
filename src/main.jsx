@@ -9,6 +9,13 @@ import StrikeAnimation from './components/StrikeAnimation'
 import UpdatePrompt from './components/UpdatePrompt'
 import Guide from './components/Guide'
 
+// Fallback für Browser, die user-select ignorieren (iOS Safari bei langem Druck,
+// Android-Kontextmenü): Markieren und Kontextmenü außerhalb von Eingabefeldern
+// unterbinden.
+const isField = (e) => e.target instanceof Element && !!e.target.closest('input, textarea, [contenteditable]')
+document.addEventListener('selectstart', (e) => { if (!isField(e)) e.preventDefault() })
+document.addEventListener('contextmenu', (e) => { if (!isField(e)) e.preventDefault() })
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>

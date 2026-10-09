@@ -50,6 +50,20 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Nichts in der App ist Fließtext zum Markieren: ein langer Druck (Streichen)
+   darf weder Text markieren noch das iOS-Menü (Kopieren/Lupe) öffnen. Nur
+   Eingabefelder bleiben bedienbar. */
+html, body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .app {
   height: 100%;
   display: flex;

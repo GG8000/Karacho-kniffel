@@ -5,6 +5,7 @@ import ModeSelect from "./screens/ModeSelect";
 import LuckyScoreGame from "./screens/LuckyScoreGame";
 import KniffelExtrem from "./screens/KniffelExtrem";
 import Statistics from "./screens/Statistics";
+import Strategy from "./screens/Strategy";
 import Login from "./screens/Login";
 import Profile from "./screens/Profile";
 import OnlineLobby from "./screens/OnlineLobby";
@@ -621,6 +622,7 @@ export default function App() {
   if (screen === "lucky") return <LuckyScoreGame onExit={goToModeSelect} />;
   if (screen === "extrem") return <KniffelExtrem onExit={goToModeSelect} />;
   if (screen === "stats") return <Statistics onBack={goToModeSelect} />;
+  if (screen === "strategy") return <Strategy onBack={goToModeSelect} />;
   if (screen === "profile") return <Profile onBack={goToModeSelect} />;
   if (screen === "online") return <OnlineLobby onBack={goToModeSelect} />;
 

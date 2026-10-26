@@ -100,7 +100,7 @@ export default function ModeSelect({ onSelect }) {
         </div>
       </button>
 
-      <div style={{ display: 'flex', gap: 20, marginTop: 8 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 20px', marginTop: 8 }}>
         <button
           onClick={() => onSelect('stats')}
           style={{
@@ -113,6 +113,19 @@ export default function ModeSelect({ onSelect }) {
           }}
         >
           📊 STATISTIKEN
+        </button>
+        <button
+          onClick={() => onSelect('strategy')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: 14,
+            cursor: 'pointer',
+            letterSpacing: 2,
+          }}
+        >
+          🧠 STRATEGIE
         </button>
         <button
           onClick={() => onSelect('profile')}

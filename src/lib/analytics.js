@@ -19,6 +19,7 @@ const SCREEN_PATHS = {
   lucky: '/lucky',
   extrem: '/extrem',
   stats: '/stats',
+  strategy: '/strategie',
   profile: '/profile',
   online: '/online',
 }

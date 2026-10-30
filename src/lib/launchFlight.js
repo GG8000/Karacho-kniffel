@@ -1,18 +1,21 @@
-// Flugbahn der Lade-Rakete (rein rechnerisch, damit sie ohne DOM testbar ist).
+// Flugbahn des Lade-Würfels (rein rechnerisch, damit sie ohne DOM testbar ist).
 //
-// EINE Kurve für p = 0..1: Die Rakete steigt senkrecht (Nase nach oben, keine
-// Drehung, kein Pendeln) hinter der Erde auf, tritt am oberen Rand der Kugel aus
-// und wächst dabei auf den Betrachter zu. Position, Größe und Flammenlänge sind
-// reine Funktionen von p.
+// EINE Kurve für p = 0..1: Der Würfel steigt senkrecht (keine Drehung, kein
+// Pendeln) hinter der Erde auf, tritt am oberen Rand der Kugel aus und wächst
+// dabei auf den Betrachter zu. Position, Größe und Schub sind reine Funktionen
+// von p.
 
-// Maße der Rakete in Vielfachen der Skalierung s * B (siehe LaunchSplash.jsx):
-// Düse unterhalb der Mitte und sichtbare Flammenlänge bei flY = 1.
-export const NOZZLE = 0.54
-export const FLAME_LEN = 1.3
+// Freiraum unter dem Würfel (in Vielfachen von s * B), den die Z-Umschaltung
+// verlangt. Bewusst großzügig und unverändert aus der Zeit mit Flammensäule:
+// So bleiben Bahn und Umschaltzeitpunkt exakt gleich, und Würfel samt Schein
+// (Radius ca. 1,5 s*B) sind beim Umschalten sicher frei vom Rand der Erde.
+const CLEAR_BASE = 0.54
+const CLEAR_THRUST = 1.3
 
 const lerp = (a, b, k) => a + (b - a) * k
 
-export const flameY = (p) => lerp(0.5, 1.9, p) // Flamme brennt schon, wird nur länger
+// Schub: Das Triebwerk brennt schon beim Start und wird nur stärker (0.5 .. 1.9).
+export const thrust = (p) => lerp(0.5, 1.9, p)
 
 // l: Layout aus LaunchSplash (w, h, cx, cy, R, B, sx, sy), sMin/sMax: Start-/Endgröße.
 export function makeFlight(l, sMin, sMax) {
@@ -24,11 +27,11 @@ export function makeFlight(l, sMin, sMax) {
   const f = (p) => 0.6 * p + 0.4 * (1 - (1 - p) * (1 - p))
   const limb = l.cy - l.R // Oberkante der Scheibe in der Bildmitte
 
-  // Z-Umschaltung ist erlaubt, sobald die GANZE Rakete samt Flammenspitze über
-  // dem Rand der Scheibe liegt (sonst sprängen Flammenpixel sichtbar vor die Erde).
+  // Z-Umschaltung ist erlaubt, sobald der ganze Würfel samt Schein über dem Rand
+  // der Scheibe liegt (sonst sprängen Pixel sichtbar vor die Erde).
   const clearAt = (p, y) => {
     const bs = l.B * scaleAt(p)
-    return y + bs * (NOZZLE + FLAME_LEN * flameY(p) * 1.12) < limb - 0.15 * bs
+    return y + bs * (CLEAR_BASE + CLEAR_THRUST * thrust(p) * 1.12) < limb - 0.15 * bs
   }
 
   // Zielhöhe beim Vorbeiflug. Auf breiten, flachen Fenstern liegt der Rand der

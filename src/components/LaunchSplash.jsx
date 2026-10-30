@@ -1,7 +1,7 @@
 // Ladebildschirm: Ein Würfel (SVG, drei sichtbare Flächen, Fünf nach vorn)
 // startet VERDECKT hinter der (echten, drehenden) Erde, taucht am oberen Rand
 // der Kugel auf, fliegt senkrecht (ohne Drehen/Pendeln) auf den Spieler zu, das
-// Triebwerk sitzt HINTER ihm (Schein, Flammenzungen, Strahlen), rauscht an der
+// Triebwerk sitzt HINTER ihm (Abgasstrahl auf einem Canvas, lib/launchPlume.js), rauscht an der
 // Kamera vorbei
 // (Bildschirm-Shake + Blitz), danach erscheint der Titel.
 //
@@ -18,6 +18,7 @@ import Globe, { GLOBE_DISC_RATIO, preloadGlobe } from './Globe'
 import { createLaunchSound, isSoundMuted, setSoundMuted } from '../lib/launchSound'
 import { setGlobeHandoff } from '../lib/globeHandoff'
 import { makeFlight, thrust } from '../lib/launchFlight'
+import { createPlume } from '../lib/launchPlume'
 
 // So früh wie möglich anstoßen (läuft schon beim Import in App.jsx), damit die
 // Landmassen-Textur beim ersten Frame fertig ist.
@@ -27,16 +28,15 @@ preloadGlobe()
 // pass: Würfel rauscht an der Kamera vorbei (p = 1, Shake/Blitz, Ton-passAt)
 // reveal: Titel erscheint (Ton-Akkord liegt bei pass + 200 ms)  |  end: onDone
 // Zwischen reveal und end bleibt ein ruhiger Moment, in dem der Titel steht.
-const FULL = { pass: 3300, reveal: 3500, end: 5000, sMax: 14, post: 220, ember: 1 }
+const FULL = { pass: 3300, reveal: 3500, end: 5000, sMax: 14, post: 220 }
 // Bewegung reduziert: kürzer, kleiner, ohne Shake/Blitz/Vibration.
-const CALM = { pass: 1700, reveal: 1900, end: 3200, sMax: 4.5, post: 500, ember: 0.4 }
+const CALM = { pass: 1700, reveal: 1900, end: 3200, sMax: 4.5, post: 500 }
 
 const RES = 4 // Würfel wird 4x größer gerastert und runterskaliert -> bleibt beim Heranfliegen scharf
 const S_MIN = 0.16 // Anfangsgröße (Vielfaches der Würfelgröße-Einheit B)
 const EARTH_SPEED = 24 // Grad pro Sekunde: sichtbar, aber ruhig
 const VISIBLE = 0.62 // so viel der Kugelscheibe (von oben) ist sichtbar
 const SHAKE_MS = 560
-const MAX_EMBERS = 22
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
 const lerp = (a, b, k) => a + (b - a) * k
@@ -115,10 +115,10 @@ export default function LaunchSplash({ onDone }) {
   const stageRef = useRef(null)
   const globeRef = useRef(null)
   const dieRef = useRef(null)
-  const exhaustRefs = useRef([]) // Triebwerk hinter dem Würfel: Schein, 3 Flammenlagen, Strahlen
+  const glowRef = useRef(null) // kleiner warmer Schein direkt hinter dem Würfel
+  const plumeRef = useRef(null) // Canvas für den Abgasstrahl
   const limbRef = useRef(null)
   const flyerRef = useRef(null)
-  const emberEls = useRef([])
   const ringRef = useRef(null)
   const flashRef = useRef(null)
   const titleRef = useRef(null)
@@ -139,8 +139,8 @@ export default function LaunchSplash({ onDone }) {
     const stage = stageRef.current
     const dieEl = dieRef.current
     const flyer = flyerRef.current
-    const [exCorona, exOuter, exMid, exInner, exStreaks] = exhaustRefs.current
-    const embers = emberEls.current.map((el) => ({ el, alive: false, born: 0, life: 0, x: 0, y: 0, vx: 0, vy: 0 }))
+    const plumeCv = plumeRef.current
+    const plume = createPlume(plumeCv, reduced)
 
     let raf = 0
     let t0 = null
@@ -152,46 +152,10 @@ export default function LaunchSplash({ onDone }) {
     let revealed = false
     let finished = false
     let hidden = false
-    let emberAcc = 0
+    let plumeOn = false // Canvas wird gerade gezeichnet (nach dem Ausblenden einmal leeren)
 
     const flight = makeFlight(layoutRef.current, S_MIN, T.sMax)
     const lastLayout = { l: layoutRef.current }
-
-    function spawnEmber(now, x, y, s) {
-      const e = embers.find((m) => !m.alive)
-      if (!e) return
-      const l = layoutRef.current
-      const bs = Math.min(l.B * s, 170) // Funken-Tempo wächst mit dem Würfel, aber nicht ins Unendliche
-      // Funken entstehen hinter dem Würfel und strömen in alle Richtungen nach außen
-      // (Würfel fliegt auf uns zu: aus unserer Sicht wandern sie radial weg und
-      // werden dabei größer)
-      const a = Math.random() * Math.PI * 2
-      e.alive = true
-      e.born = now
-      e.life = 450 + Math.random() * 450
-      e.x = x + Math.cos(a) * l.B * s * 0.3
-      e.y = y + Math.sin(a) * l.B * s * 0.3
-      const sp = bs * (1.2 + Math.random() * 2.2)
-      e.vx = Math.cos(a) * sp
-      e.vy = Math.sin(a) * sp
-      e.k = 0.6 + Math.min(s, 4) * 0.4
-      e.el.className = Math.random() < 0.3 ? 'launch-ember is-hot' : 'launch-ember'
-    }
-
-    function updateEmbers(now) {
-      for (const e of embers) {
-        if (!e.alive) continue
-        const age = (now - e.born) / 1000
-        const k = (age * 1000) / e.life
-        if (k >= 1) {
-          e.alive = false
-          e.el.style.opacity = '0'
-          continue
-        }
-        e.el.style.transform = `translate3d(${(e.x + e.vx * age).toFixed(1)}px,${(e.y + e.vy * age).toFixed(1)}px,0) scale(${(e.k * (0.6 + 1.2 * k)).toFixed(2)})`
-        e.el.style.opacity = (1 - k).toFixed(2)
-      }
-    }
 
     function shake(ms) {
       if (ms >= SHAKE_MS) {
@@ -257,19 +221,7 @@ export default function LaunchSplash({ onDone }) {
             crisp = true
             dieEl.style.willChange = 'auto'
           }
-          // Triebwerk: nur transform/opacity. Jede Lage flackert für sich (Zufall in
-          // der Größe, nicht in der Drehung), wächst mit Schub und Würfelgröße.
-          const fl = () => 1 + (Math.random() - 0.5) * 0.16
-          const ex = (el, size, op) => {
-            el.style.transform = `scale(${(size * fl()).toFixed(3)})`
-            el.style.opacity = (op * fade).toFixed(2)
-          }
-          ex(exCorona, lerp(0.8, 1.3, th), lerp(0.45, 1, th))
-          ex(exOuter, lerp(0.6, 1.25, th), lerp(0.5, 0.95, th))
-          ex(exMid, lerp(0.5, 1.05, th), lerp(0.55, 1, th))
-          ex(exInner, lerp(0.4, 0.8, th), lerp(0.6, 1, th))
-          exStreaks.style.transform = `scale(${lerp(0.7, 1.4, th).toFixed(3)})`
-          exStreaks.style.opacity = (0.75 * smooth(0.2, 0.8, p) * fade).toFixed(2)
+          glowRef.current.style.opacity = ((0.25 + 0.35 * th) * fade).toFixed(2)
           // Bewegungsunschärfe erst kurz vor dem Vorbeiflug; in 0,5px-Stufen, damit
           // der Filter nicht jeden Frame neu gesetzt wird.
           if (!reduced) {
@@ -287,15 +239,17 @@ export default function LaunchSplash({ onDone }) {
       const rim = smooth(0.04, 0.26, p) * (1 - 0.85 * smooth(0.3, 0.7, p))
       limbRef.current.style.opacity = rim.toFixed(2)
 
-      // --- Funken (Pool, DOM-Knoten werden wiederverwendet) ---
-      if (!hidden) {
-        emberAcc += ((4 + 22 * p) * T.ember * dt) / 1000
-        while (emberAcc >= 1) {
-          emberAcc -= 1
-          spawnEmber(ts, x, y, s)
-        }
+      // --- Abgasstrahl (Canvas hinter dem Würfel) ---
+      // Erst zeichnen, wenn der Würfel vor der Erde liegt (front) und noch da ist;
+      // zum Schluss blendet das ganze Canvas aus, damit nur der Würfel übrig bleibt.
+      if (!hidden && front && fade > 0.003) {
+        plumeOn = true
+        plumeCv.style.opacity = fade.toFixed(2)
+        plume.frame(dt / 1000, x, y, bs, th, true)
+      } else if (plumeOn) {
+        plumeOn = false
+        plume.clear()
       }
-      updateEmbers(ts)
 
       // --- Vorbeiflug: Shake, Blitz, Ring, Vibration ---
       if (t >= T.pass && !passed) {
@@ -365,20 +319,11 @@ export default function LaunchSplash({ onDone }) {
 
         {/* Flieger-Ebene: z-index 0 = hinter der Erde, 2 = davor (JS schaltet um) */}
         <div ref={flyerRef} className="launch-flyer">
-        <div className="launch-embers">
-          {Array.from({ length: MAX_EMBERS }, (_, i) => (
-            <span key={i} ref={(el) => { emberEls.current[i] = el }} className="launch-ember" />
-          ))}
-        </div>
+        <canvas ref={plumeRef} className="launch-plume" width={L.w} height={L.h} />
 
         {/* Würfel mit Triebwerk dahinter */}
         <div ref={dieRef} className="launch-die-box" style={emStyle}>
-          {/* Triebwerk HINTER dem Würfel (steht im DOM davor, die Zeichnung liegt obenauf) */}
-          <div ref={(el) => { exhaustRefs.current[0] = el }} className="launch-ex launch-ex-corona" />
-          <div ref={(el) => { exhaustRefs.current[4] = el }} className="launch-ex launch-ex-streaks" />
-          <div ref={(el) => { exhaustRefs.current[1] = el }} className="launch-ex launch-ex-outer" />
-          <div ref={(el) => { exhaustRefs.current[2] = el }} className="launch-ex launch-ex-mid" />
-          <div ref={(el) => { exhaustRefs.current[3] = el }} className="launch-ex launch-ex-inner" />
+          <div ref={glowRef} className="launch-die-glow" />
           <DieArt />
         </div>
         </div>

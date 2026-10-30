@@ -116,7 +116,6 @@ export default function Statistics({ onBack }) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#1e1e1e',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -169,7 +168,7 @@ export default function Statistics({ onBack }) {
     <div style={{ marginTop: 4 }}>
       <div
         style={{
-          color: 'rgba(255,255,255,0.4)',
+          color: 'var(--text-faint)',
           fontSize: 12,
           letterSpacing: 2,
           marginBottom: 8,
@@ -186,7 +185,6 @@ export default function Statistics({ onBack }) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#1e1e1e',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -226,13 +224,13 @@ export default function Statistics({ onBack }) {
                 flex: 1,
                 // Bei vier Tabs wird die Zeile am Handy eng.
                 padding: '8px 2px',
-                borderRadius: 8,
+                borderRadius: 'var(--radius-sm)',
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 11,
                 fontWeight: 'bold',
-                background: tab === id ? '#673ab7' : 'rgba(255,255,255,0.06)',
-                color: tab === id ? 'white' : 'rgba(255,255,255,0.5)',
+                background: tab === id ? 'var(--primary)' : 'var(--surface)',
+                color: tab === id ? 'white' : 'var(--text-dim)',
               }}
             >
               {label}
@@ -254,7 +252,7 @@ export default function Statistics({ onBack }) {
         {players.length === 0 && tab !== 'month' && tab !== 'cities' && (
           <div
             style={{
-              color: 'rgba(255,255,255,0.4)',
+              color: 'var(--text-faint)',
               fontSize: 15,
               textAlign: 'center',
               padding: '32px 0',
@@ -275,17 +273,17 @@ export default function Statistics({ onBack }) {
               }}
             >
               <div
-                style={{ color: '#673ab7', fontWeight: 'bold', fontSize: 22 }}
+                style={{ color: 'var(--lilac)', fontWeight: 'bold', fontSize: 22 }}
               >
                 {selectedPlayer.name}
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div
-                  style={{ color: '#b39ddb', fontWeight: 'bold', fontSize: 22 }}
+                  style={{ color: 'var(--lilac)', fontWeight: 'bold', fontSize: 22 }}
                 >
                   {selectedPlayer.rating}
                 </div>
-                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10 }}>
+                <div style={{ color: 'var(--text-faint)', fontSize: 10 }}>
                   RATING
                 </div>
               </div>
@@ -314,7 +312,7 @@ export default function Statistics({ onBack }) {
                   color: 'white',
                 }}
               >
-                <span style={{ color: 'rgba(255,255,255,0.6)' }}>{label}</span>
+                <span style={{ color: 'var(--text-dim)' }}>{label}</span>
                 <span style={{ fontWeight: 'bold' }}>{value}</span>
               </div>
             ))}
@@ -352,7 +350,7 @@ export default function Statistics({ onBack }) {
         ) : tab === 'cities' ? (
           // ---- Städte ----
           <>
-            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+            <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
               Woher gekniffelt wird — ohne Namen und ohne Konto-Bezug. Abschalten
               unter 👤 Konto.
             </div>
@@ -371,9 +369,9 @@ export default function Statistics({ onBack }) {
             {me && players.length > 1 && (
               <div
                 style={{
-                  background: 'rgba(103,58,183,0.15)',
-                  border: '1px solid rgba(103,58,183,0.4)',
-                  borderRadius: 12,
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: 'var(--radius-md)',
                   padding: '14px 16px',
                 }}
               >
@@ -388,7 +386,7 @@ export default function Statistics({ onBack }) {
                 >
                   <span
                     style={{
-                      color: 'rgba(255,255,255,0.4)',
+                      color: 'var(--text-faint)',
                       fontSize: 12,
                       letterSpacing: 2,
                     }}
@@ -408,7 +406,7 @@ export default function Statistics({ onBack }) {
                         background: 'rgba(255,255,255,0.08)',
                         color: 'white',
                         border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: 8,
+                        borderRadius: 'var(--radius-sm)',
                         padding: '5px 8px',
                         fontSize: 13,
                         fontWeight: 'bold',
@@ -416,7 +414,7 @@ export default function Statistics({ onBack }) {
                       }}
                     >
                       {players.map((p) => (
-                        <option key={p.id} value={p.id} style={{ background: '#1e1e1e' }}>
+                        <option key={p.id} value={p.id} style={{ background: 'var(--surface-solid)' }}>
                           {p.name}
                         </option>
                       ))}
@@ -430,15 +428,15 @@ export default function Statistics({ onBack }) {
             {faceStats.__global?.total > 0 && (
               <div
                 style={{
-                  background: 'rgba(103,58,183,0.15)',
-                  border: '1px solid rgba(103,58,183,0.4)',
-                  borderRadius: 12,
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: 'var(--radius-md)',
                   padding: '14px 16px',
                 }}
               >
                 <div
                   style={{
-                    color: 'rgba(255,255,255,0.4)',
+                    color: 'var(--text-faint)',
                     fontSize: 12,
                     letterSpacing: 2,
                     marginBottom: 10,
@@ -451,7 +449,7 @@ export default function Statistics({ onBack }) {
             )}
 
             {players.length > 0 && (
-              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+              <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
                 Rating aus euren gemeinsamen Spielen{' '}
                 {isLoggedIn ? '· ☁ = Account' : ''}
               </div>
@@ -462,12 +460,12 @@ export default function Statistics({ onBack }) {
                 onClick={() => setSelected(p.id)}
                 style={{
                   background:
-                    i === 0 ? 'rgba(103,58,183,0.28)' : 'rgba(103,58,183,0.12)',
+                    i === 0 ? 'rgba(var(--primary-rgb),0.28)' : 'rgba(var(--primary-rgb),0.12)',
                   border:
                     i === 0
-                      ? '1px solid #673ab7'
-                      : '1px solid rgba(103,58,183,0.3)',
-                  borderRadius: 12,
+                      ? '1px solid var(--lilac)'
+                      : '1px solid rgba(var(--primary-rgb),0.3)',
+                  borderRadius: 'var(--radius-md)',
                   padding: '12px 14px',
                   color: 'white',
                   cursor: 'pointer',
@@ -481,7 +479,7 @@ export default function Statistics({ onBack }) {
                     width: 24,
                     fontSize: 16,
                     fontWeight: 'bold',
-                    color: 'rgba(255,255,255,0.6)',
+                    color: 'var(--text-dim)',
                     textAlign: 'center',
                   }}
                 >
@@ -493,7 +491,7 @@ export default function Statistics({ onBack }) {
                   </div>
                   <div
                     style={{
-                      color: 'rgba(255,255,255,0.4)',
+                      color: 'var(--text-faint)',
                       fontSize: 11,
                       marginTop: 2,
                     }}
@@ -503,7 +501,7 @@ export default function Statistics({ onBack }) {
                   </div>
                 </div>
                 <div
-                  style={{ color: '#b39ddb', fontWeight: 'bold', fontSize: 18 }}
+                  style={{ color: 'var(--lilac)', fontWeight: 'bold', fontSize: 18 }}
                 >
                   {p.rating}
                 </div>
@@ -518,7 +516,7 @@ export default function Statistics({ onBack }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
-                color: 'rgba(255,255,255,0.35)',
+                color: 'var(--text-faint)',
                 fontSize: 12,
               }}
             >
@@ -534,10 +532,10 @@ export default function Statistics({ onBack }) {
                     setRuleError(null)
                   }}
                   style={{
-                    background: manage ? '#673ab7' : 'rgba(255,255,255,0.06)',
+                    background: manage ? 'var(--primary)' : 'var(--surface)',
                     border: 'none',
-                    borderRadius: 8,
-                    color: manage ? 'white' : 'rgba(255,255,255,0.5)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: manage ? 'white' : 'var(--text-dim)',
                     fontSize: 11,
                     fontWeight: 'bold',
                     padding: '6px 10px',
@@ -551,7 +549,7 @@ export default function Statistics({ onBack }) {
             </div>
 
             {manage && (
-              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+              <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
                 Zusammenlegen führt zwei Namen zu einem Spieler zusammen,
                 Entfernen nimmt einen ganz aus der Auswertung. Beides betrifft
                 nur die Statistik — die Spiele selbst bleiben erhalten, und
@@ -568,9 +566,9 @@ export default function Statistics({ onBack }) {
                 key={p.id}
                 onClick={manage ? undefined : () => setSelected(p.id)}
                 style={{
-                  background: 'rgba(103,58,183,0.15)',
-                  border: '1px solid rgba(103,58,183,0.4)',
-                  borderRadius: 12,
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: 'var(--radius-md)',
                   padding: '14px 18px',
                   color: 'white',
                   cursor: manage ? 'default' : 'pointer',
@@ -587,7 +585,7 @@ export default function Statistics({ onBack }) {
                   </div>
                   <div
                     style={{
-                      color: 'rgba(255,255,255,0.4)',
+                      color: 'var(--text-faint)',
                       fontSize: 12,
                       marginTop: 2,
                     }}
@@ -606,7 +604,7 @@ export default function Statistics({ onBack }) {
                       style={{
                         background: 'rgba(255,255,255,0.08)',
                         border: 'none',
-                        borderRadius: 8,
+                        borderRadius: 'var(--radius-sm)',
                         color: 'white',
                         fontSize: 11,
                         padding: '8px 10px',
@@ -624,7 +622,7 @@ export default function Statistics({ onBack }) {
                       style={{
                         background: 'rgba(255,82,82,0.15)',
                         border: 'none',
-                        borderRadius: 8,
+                        borderRadius: 'var(--radius-sm)',
                         color: '#ff8a80',
                         fontSize: 11,
                         padding: '8px 10px',
@@ -635,7 +633,7 @@ export default function Statistics({ onBack }) {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ color: '#673ab7', fontSize: 20 }}>›</div>
+                  <div style={{ color: 'var(--lilac)', fontSize: 20 }}>›</div>
                 )}
               </div>
             ))}
@@ -644,7 +642,7 @@ export default function Statistics({ onBack }) {
               <div style={{ marginTop: 8 }}>
                 <div
                   style={{
-                    color: 'rgba(255,255,255,0.4)',
+                    color: 'var(--text-faint)',
                     fontSize: 12,
                     letterSpacing: 2,
                     marginBottom: 8,
@@ -662,7 +660,7 @@ export default function Statistics({ onBack }) {
                       borderBottom: '1px solid rgba(255,255,255,0.07)',
                       padding: '9px 0',
                       fontSize: 13,
-                      color: 'rgba(255,255,255,0.75)',
+                      color: 'var(--text-soft)',
                     }}
                   >
                     <span style={{ flex: 1, minWidth: 0 }}>
@@ -683,7 +681,7 @@ export default function Statistics({ onBack }) {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#b388ff',
+                        color: 'var(--lilac)',
                         fontSize: 12,
                         fontWeight: 'bold',
                         cursor: 'pointer',
@@ -704,7 +702,7 @@ export default function Statistics({ onBack }) {
                   marginTop: 8,
                   background: 'none',
                   border: 'none',
-                  color: 'rgba(255,100,100,0.5)',
+                  color: 'var(--danger-ink)',
                   fontSize: 13,
                   cursor: 'pointer',
                 }}
@@ -723,7 +721,7 @@ export default function Statistics({ onBack }) {
             <div className="dialog-title">
               {labelFor(mergeFrom)} zählt künftig zu …
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+            <div style={{ color: 'var(--text-dim)', fontSize: 14 }}>
               Alle Spiele von {labelFor(mergeFrom)} werden dem gewählten Spieler
               zugerechnet. Rückgängig machen kannst du das jederzeit.
             </div>
@@ -748,9 +746,9 @@ export default function Statistics({ onBack }) {
                       runRule(() => mergePlayer(from, t.id, rules))
                     }}
                     style={{
-                      background: 'rgba(103,58,183,0.15)',
-                      border: '1px solid rgba(103,58,183,0.4)',
-                      borderRadius: 10,
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderRadius: 'var(--radius-sm)',
                       padding: '11px 14px',
                       color: 'white',
                       fontSize: 15,
@@ -761,7 +759,7 @@ export default function Statistics({ onBack }) {
                     {t.name} {t.isAccount && '☁'}
                     <span
                       style={{
-                        color: 'rgba(255,255,255,0.4)',
+                        color: 'var(--text-faint)',
                         fontSize: 12,
                       }}
                     >
@@ -787,7 +785,7 @@ export default function Statistics({ onBack }) {
             <div className="dialog-title">
               {labelFor(hideKey)} aus der Statistik nehmen?
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+            <div style={{ color: 'var(--text-dim)', fontSize: 14 }}>
               Der Spieler verschwindet aus Rangliste, Head-to-Head und
               Monatsrückblick, und die betroffenen Spiele werden gewertet, als
               hätte er nie mitgespielt. Die Spiele selbst bleiben erhalten — du
@@ -816,7 +814,7 @@ export default function Statistics({ onBack }) {
         <div className="dialog-overlay">
           <div className="dialog">
             <div className="dialog-title">Lokalen Verlauf löschen?</div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+            <div style={{ color: 'var(--text-dim)', fontSize: 14 }}>
               Löscht nur den Zwischenspeicher auf diesem Gerät. Bereits
               synchronisierte Spiele bleiben in der Cloud.
             </div>

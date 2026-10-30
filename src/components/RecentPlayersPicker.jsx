@@ -76,7 +76,7 @@ export default function RecentPlayersPicker({
               {p.profileId && (
                 <span
                   title="Verknüpfter Account — bekommt das Spiel auf die eigene Statistik"
-                  style={{ color: '#b388ff' }}
+                  style={{ color: 'var(--lilac)' }}
                 >
                   ☁
                 </span>

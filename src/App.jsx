@@ -156,7 +156,7 @@ function LoadingScreen({ onDone }) {
 
   return (
     <div ref={screenRef} style={{
-      position: 'fixed', inset: 0, background: '#1e1e1e',
+      position: 'fixed', inset: 0, background: 'var(--space-bg)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       zIndex: 9999, overflow: 'hidden',
@@ -172,6 +172,11 @@ function LoadingScreen({ onDone }) {
           100% { opacity:1; transform:scale(1) translateY(0); }
         }
       `}</style>
+
+      {/* Raumhintergrund: Sterne (funkeln per CSS) und ein Planet, beide hinter
+          der Rakete (z-index -1 im Stapel des Ladebildschirms). */}
+      <div className="starfield" />
+      <div className="splash-planet" />
 
       {/* Rakete: Würfel oben, Flamme unten */}
       <div ref={groupRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -198,7 +203,7 @@ function LoadingScreen({ onDone }) {
       {/* Progress */}
       <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
         <div ref={trackRef} style={{ width: 180, height: 5, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
-          <div ref={fillRef} style={{ height: '100%', width: '0%', background: '#673ab7', borderRadius: 3 }} />
+          <div ref={fillRef} className="splash-fill" style={{ height: '100%', width: '0%', borderRadius: 3 }} />
         </div>
       </div>
 
@@ -207,8 +212,8 @@ function LoadingScreen({ onDone }) {
         position: 'absolute', opacity: 0,
         display: 'flex', gap: 12, alignItems: 'center',
       }}>
-        <span style={{ fontSize: 28, fontWeight: 'bold', letterSpacing: 3, color: '#ff6600' }}>KARACHO</span>
-        <span style={{ fontSize: 28, fontWeight: 'bold', letterSpacing: 3, color: '#673ab7' }}>KNIFFEL</span>
+        <span className="splash-title-a" style={{ fontSize: 28, fontWeight: 'bold', letterSpacing: 3 }}>KARACHO</span>
+        <span className="splash-title-b" style={{ fontSize: 28, fontWeight: 'bold', letterSpacing: 3 }}>KNIFFEL</span>
       </div>
     </div>
   )
@@ -609,7 +614,6 @@ export default function App() {
         style={{
           position: "fixed",
           inset: 0,
-          background: "#1e1e1e",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -646,7 +650,6 @@ export default function App() {
         style={{
           position: "fixed",
           inset: 0,
-          background: "#1e1e1e",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -658,7 +661,7 @@ export default function App() {
         <div style={{ fontSize: 48 }}>🏆</div>
         <div
           style={{
-            color: "#673ab7",
+            color: "var(--lilac)",
             fontWeight: "bold",
             fontSize: 22,
             letterSpacing: 3,
@@ -674,12 +677,12 @@ export default function App() {
               width: "100%",
               maxWidth: 340,
               background:
-                i === 0 ? "rgba(103,58,183,0.3)" : "rgba(255,255,255,0.05)",
+                i === 0 ? "rgba(var(--primary-rgb),0.3)" : "var(--surface)",
               border:
                 i === 0
-                  ? "2px solid #673ab7"
-                  : "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12,
+                  ? "2px solid var(--lilac)"
+                  : "1px solid var(--glass-border)",
+              borderRadius: "var(--radius-md)",
               padding: "14px 18px",
               display: "flex",
               flexDirection: "column",
@@ -698,7 +701,7 @@ export default function App() {
                 {r.name}
               </div>
               <div
-                style={{ color: "#673ab7", fontWeight: "bold", fontSize: 18 }}
+                style={{ color: "var(--lilac)", fontWeight: "bold", fontSize: 18 }}
               >
                 {r.total}
               </div>
@@ -711,7 +714,7 @@ export default function App() {
 
         <div
           style={{
-            color: "rgba(255,255,255,0.35)",
+            color: "var(--text-faint)",
             fontSize: 12,
             marginTop: 4,
           }}
@@ -776,7 +779,7 @@ export default function App() {
           style={{
             background: "none",
             border: "none",
-            color: "rgba(255,255,255,0.75)",
+            color: "var(--text-soft)",
             fontSize: 17,
             cursor: "pointer",
             width: 40,
@@ -919,7 +922,7 @@ export default function App() {
             <div className="dialog-title">
               "{players[removeDialog]}" entfernen?
             </div>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 14 }}>
+            <div style={{ color: "var(--text-dim)", fontSize: 14 }}>
               Alle Punkte dieses Spielers werden gelöscht.
             </div>
             <div className="dialog-actions">
@@ -949,7 +952,7 @@ export default function App() {
         >
           <div className="dialog">
             <div className="dialog-title">Spiel neu starten?</div>
-            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>
+            <div style={{ color: "var(--text-dim)", fontSize: 14 }}>
               Alle Punkte werden gespeichert und gelöscht.
             </div>
             <div className="dialog-actions">

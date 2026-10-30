@@ -4,36 +4,116 @@
   padding: 0;
 }
 
-/* --- Farben des Blocks ----------------------------------------------------
-   Der Block trägt die Farben der App: dunkles Grau wie Hintergrund und App-Bar,
-   Lila wie die Buttons. Filz und Messing (3073100) hatten den Kontrast
-   repariert, sahen aber aus wie eine andere App.
+/* --- Space Explorer: Designsystem ------------------------------------------
+   Tiefes Königsblau läuft nach Indigo und Violett, darüber Sterne und ein paar
+   bunte Konfettipunkte. Die Palette steht NUR hier: Screens und Komponenten
+   greifen per var(--…) darauf zu (auch inline), damit ein Umbau eine Stelle
+   kostet. Die Variablennamen des alten Blocks (--sheet-*, --bonus-*,
+   --kniffel-gold, --armed) bleiben, nur die Werte sind neu.
 
-   Der Fehler von davor bleibt ausgeschlossen: die Spaltenköpfe standen auf
-   #673ab7 mit SCHWARZER Schrift, 2,7:1 bei einem Minimum von 4,5:1. Mit weißer
-   Schrift sind es 7,3:1. Die Werte unten sind durchgerechnet und stehen als
-   Kommentar dabei, damit sie beim nächsten Umbau nicht still verlorengehen.
-
-   Als Custom Properties, weil die Blockfarben teils hier und teils inline in
-   PlayerColumn, KniffelExtrem und Guide stehen — so gibt es trotzdem nur eine
-   Quelle. */
+   Kontrast (WCAG, durchgerechnet; Schrift gegen den hellsten Hintergrund, der
+   an der Stelle vorkommen kann — der Block liegt auf --sheet-bg, das selbst
+   über dem hellsten Verlaufsende #5a3fd0 gerechnet ist):
+     weiß auf Spaltenkopf #5b3fd6 … #7a45d8      6,7:1 … 5,7:1   (min. 4,5)
+     weiß auf btn-primary #7a4be0 … #5233c4      5,4:1 … 8,0:1
+     weiß auf App-Bar #2c3294                    10,6:1
+     weiß auf Zelle                              14,8:1
+     weiß auf scharfer Zelle (Koralle 22 %)      10,1:1
+     weiß auf SUMME-Zeile                        12,9:1
+     weiß 72 % (Kategorien) auf Kategorie-Spalte  8,9:1
+     --lilac #cdbdff auf SUMME-Zeile              7,6:1
+     --lilac auf "nächste Zelle"                  7,4:1
+     --bonus-ok #69ff47 auf SUMME-Zeile           9,9:1
+     --bonus-miss #ff8f8f auf SUMME-Zeile         5,9:1
+     --kniffel-gold auf Kategorie-Spalte         10,1:1
+     --lilac auf --bg-deep #0b1030               10,9:1
+     --lilac auf --surface-solid #1b2167          8,4:1
+     weiß auf --surface-solid                    14,4:1
+     weiß auf --grad-danger #cf3049               5,0:1
+     --text-dim auf --surface-solid               8,5:1
+     --text-faint auf --surface-solid             7,1:1
+     --text-dim auf Verlauf / auf Karte           6,3:1 / 5,6:1
+     --text-faint auf Verlauf / auf Karte         5,4:1 / 4,8:1
+     --danger-ink auf Verlauf / auf Karte         5,3:1 / 4,6:1
+     --text-soft auf Modus-Karte (Akzent-Ecke)    4,8:1 … 5,7:1
+     dunkle Schrift #2b1700 auf Bernstein-Knopf   8,4:1 … 12,1:1
+   "Verlauf" = hellster Punkt #3b2d9c, "Karte" = --card-bg darüber. */
 :root {
-  --sheet-bg: #121212;      /* Zellfläche, wie der App-Hintergrund */
-  --sheet-side: #1a1a1a;    /* Kategorie-Spalte — deckend, sie ist sticky */
-  --sheet-sum: #21192f;     /* SUMME/TOTAL: 18 % Lila auf #121212, deckend */
-  --sheet-rule: rgba(255, 255, 255, 0.08); /* Gitterlinien */
+  /* Hintergrund: Tiefe von oben (fast schwarzblau) nach unten (Violett). */
+  --bg-deep: #0b1030;
+  --bg-mid: #1a1f66;
+  --bg-glow: #3a29a0;
+  /* Vier weiche Farbflecken als Radialverläufe statt filter: blur() — sieht
+     gleich aus und kostet am Handy beim Scrollen nichts. */
+  --space-bg:
+    radial-gradient(70% 38% at 92% 4%, rgba(110, 80, 255, 0.34), transparent 70%),
+    radial-gradient(60% 34% at 4% 38%, rgba(40, 130, 255, 0.2), transparent 70%),
+    radial-gradient(60% 30% at 96% 66%, rgba(255, 95, 162, 0.13), transparent 70%),
+    radial-gradient(70% 34% at 20% 100%, rgba(60, 207, 255, 0.16), transparent 70%),
+    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-mid) 52%, var(--bg-glow) 125%);
 
-  --sheet-head: #673ab7;    /* Spaltenkopf, wie btn-primary */
-  --sheet-head-ink: #fff;   /* Schrift auf Lila           — 7,3:1 */
-  --sheet-ink: #fff;        /* Zellschrift                — 18,7:1 */
-  --sheet-ink-dim: rgba(255, 255, 255, 0.7); /* Kategorien — 9,0:1 */
+  /* Flächen: Glas auf dem Verlauf, deckend nur wo etwas darunter scrollt. */
+  --surface: rgba(255, 255, 255, 0.08);
+  --surface-solid: #1b2167;
+  --surface-grad: linear-gradient(160deg, #2b3190 0%, #1b2167 55%, #141a55 100%);
+  --glass-border: rgba(255, 255, 255, 0.16);
 
-  /* #673ab7 als SCHRIFT auf Dunkel hätte nur 2,6:1 — Lila im Text daher hell. */
-  --sheet-accent: #b388ff;  /* TOTAL, nächste Zelle       — 6,3:1 auf SUMME-Zeile */
+  /* Akzente — Konfetti-Farben der Vorlage. */
+  --primary: #6a4be6;
+  --primary-rgb: 124, 92, 255;    /* Violett für Glühen, Rahmen, Tönungen */
+  --lilac: #cdbdff;               /* helles Lila als SCHRIFT auf Dunkel */
+  --accent-yellow: #ffc233;
+  --accent-orange: #ff8a4c;
+  --accent-green: #4ade80;
+  --accent-cyan: #3ccfff;
+  --accent-pink: #ff5fa2;
+
+  /* Verläufe einmal definiert, überall verwendet. */
+  --grad-primary: linear-gradient(135deg, #7a4be0 0%, #5233c4 100%);
+  --grad-amber: linear-gradient(135deg, #ffd45c 0%, #ff9f1c 100%);
+  --grad-danger: linear-gradient(135deg, #cf3049 0%, #a81c34 100%);
+  --grad-head: linear-gradient(135deg, #5b3fd6 0%, #7a45d8 100%);
+  --card-bg: rgba(var(--primary-rgb), 0.16);
+  --card-border: rgba(var(--primary-rgb), 0.42);
+
+  /* Schrift (Kontraste siehe oben). */
+  --text: #fff;
+  --text-soft: rgba(240, 236, 255, 0.88);
+  --text-dim: rgba(236, 231, 255, 0.82);
+  --text-faint: rgba(230, 224, 255, 0.76);
+  --danger-ink: #ffa0a0;          /* Fehlertext auf Dunkel */
+  --font: Poppins, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --shadow-soft: 0 10px 30px rgba(4, 6, 30, 0.45);
+  --shadow-lg: 0 24px 60px rgba(3, 5, 28, 0.6);
+  --shadow-btn: 0 6px 16px rgba(60, 30, 160, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* --- Block (Punktetabelle) ---
+     Die Zellen sind durchsichtig bzw. nur leicht aufgehellt; die dunkle Fläche
+     kommt von --sheet-bg. KEIN backdrop-filter: der Block scrollt in beide
+     Richtungen, Blur würde dort jeden Frame neu berechnet. */
+  --sheet-bg: rgba(10, 14, 52, 0.88);
+  --sheet-side: #131955;    /* Kategorie-Spalte — deckend, sie ist sticky */
+  --cell-fill: rgba(255, 255, 255, 0.06);
+  --sheet-sum: rgba(var(--primary-rgb), 0.24); /* SUMME/TOTAL */
+  --sheet-rule: rgba(255, 255, 255, 0.1); /* Gitterlinien */
+
+  --sheet-head: var(--grad-head);   /* Spaltenkopf (Verlauf, nur als background) */
+  --sheet-head-ink: #fff;           /* Schrift auf Lila   — 6,7:1 … 5,7:1 */
+  --sheet-ink: #fff;                /* Zellschrift        — 15,0:1 */
+  --sheet-ink-dim: rgba(255, 255, 255, 0.72); /* Kategorien — 8,9:1 */
+
+  /* TOTAL, nächste Zelle: helles Lila, weil --primary als Schrift auf Dunkel
+     zu schwach wäre. */
+  --sheet-accent: var(--lilac);
 
   /* Grün und Rot wie in RatingDelta und StatCharts. */
-  --bonus-ok: #69ff47;      /* SUMME >= 63                — 12,8:1 */
-  --bonus-miss: #ff5252;    /* SUMME <  63                — 5,3:1 */
+  --bonus-ok: #69ff47;      /* SUMME >= 63 */
+  --bonus-miss: #ff8f8f;    /* SUMME <  63 */
 
   /* Kniffel-Ring und Fehltipp-Schutz bleiben getrennt: zwei Bedeutungen, zwei
      Farben. */
@@ -44,10 +124,65 @@
 html, body, #root {
   height: 100%;
   overflow: hidden;
-  background: #121212;
-  color: white;
-  font-family: Roboto, Arial, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: var(--font);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Raumhintergrund fest hinter allem: der Verlauf liegt am body, die Sterne auf
+   einer eigenen Ebene davor. Beide stehen fix und scrollen nie mit. #root
+   bekommt z-index 1, damit die Screens (position: fixed, durchsichtig) die
+   Sterne sehen. */
+body {
+  background: var(--space-bg) fixed;
+  background-color: var(--bg-deep);
+}
+#root {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+/* Sternenfeld nur aus Radialverläufen (keine Bilder, kein JS). Drei Kacheln
+   mit unterschiedlicher Größe wandern gegeneinander, so wiederholt sich das
+   Muster nicht sichtbar; dazu seltene bunte Punkte wie das Konfetti der
+   Vorlage. Wird auch vom Ladebildschirm (.starfield) genutzt. */
+body::before, .starfield {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 22px 34px, #fff 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 97px 118px, rgba(255, 255, 255, 0.85) 50%, transparent 100%),
+    radial-gradient(1px 1px at 151px 61px, rgba(255, 255, 255, 0.7) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 61px 189px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 213px 207px, rgba(200, 220, 255, 0.8) 50%, transparent 100%),
+    radial-gradient(2.5px 2.5px at 120px 90px, color-mix(in srgb, var(--accent-yellow) 75%, transparent) 60%, transparent 100%),
+    radial-gradient(2.2px 2.2px at 300px 210px, color-mix(in srgb, var(--accent-cyan) 75%, transparent) 60%, transparent 100%),
+    radial-gradient(2.5px 2.5px at 40px 300px, color-mix(in srgb, var(--accent-green) 75%, transparent) 60%, transparent 100%),
+    radial-gradient(2.2px 2.2px at 330px 40px, color-mix(in srgb, var(--accent-orange) 75%, transparent) 60%, transparent 100%);
+  background-size:
+    197px 197px, 251px 251px, 313px 313px, 173px 173px, 283px 283px,
+    390px 390px, 430px 430px, 470px 470px, 410px 410px;
+  background-position:
+    0 0, 0 0, 0 0, 0 0, 0 0,
+    0 0, 70px 40px, 20px 130px, 110px 20px;
+  opacity: 0.9;
+  animation: twinkle 6s ease-in-out infinite alternate;
+}
+.starfield { position: absolute; z-index: -1; }
+
+@keyframes twinkle {
+  from { opacity: 0.55; }
+  to   { opacity: 1; }
+}
+
+/* Ein Textfeld, eine Schrift: Buttons und Felder erben sie sonst nicht. */
+button, input, select, textarea {
+  font-family: inherit;
 }
 
 /* Nichts in der App ist Fließtext zum Markieren: ein langer Druck (Streichen)
@@ -64,6 +199,24 @@ input, textarea, [contenteditable] {
   user-select: text;
 }
 
+/* Kleine Bewegung: Karten gleiten ein, gestaffelt über --i (siehe ModeSelect). */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.reveal {
+  animation: riseIn 0.55s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* Glaskarte für Gruppen auf den Screens (Profil, Lobby, Statistik …). */
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+}
+
 .app {
   height: 100%;
   display: flex;
@@ -73,14 +226,18 @@ input, textarea, [contenteditable] {
 .app-bar {
   height: 56px;
   flex-shrink: 0;
-  background: #1e1e1e;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(180deg, #2c3294 0%, #1c2270 100%);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border-bottom: 1px solid var(--glass-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  box-shadow: 0 8px 22px rgba(4, 6, 30, 0.5);
 }
 
 .game-area {
@@ -92,7 +249,7 @@ input, textarea, [contenteditable] {
   min-height: 0;
   overflow-x: auto;
   overflow-y: auto;
-  /* Die Zellen selbst sind durchsichtig — die Fläche kommt von hier, und bleibt
+  /* Die Zellen sind durchsichtig — die Fläche kommt von hier, und bleibt
      damit auch neben der letzten Spalte stehen. */
   background: var(--sheet-bg);
 }
@@ -107,6 +264,7 @@ input, textarea, [contenteditable] {
   left: 0;           /* ← bleibt beim horizontalen Scrollen links stehen */
   z-index: 1;
   background: var(--sheet-side);
+  box-shadow: 6px 0 14px rgba(3, 5, 28, 0.35);
 }
 
 .cat-header {
@@ -118,6 +276,7 @@ input, textarea, [contenteditable] {
   border: 1px solid var(--sheet-rule);
   color: var(--sheet-ink-dim);
   font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0.5px;
 }
 
@@ -130,9 +289,29 @@ input, textarea, [contenteditable] {
   justify-content: center;
   border: 1px solid var(--sheet-rule);
   color: var(--sheet-ink-dim);
-  font-weight: bold;
-  font-size: 11px;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.3px;
+}
+
+/* Spaltenkopf als gerundeter Chip. Der Rand ist durchsichtig und wird nicht
+   bemalt (background-clip), so bleibt die Kopfzeile exakt so hoch wie vorher,
+   sieht aber aus wie eine eigene Kachel. Gilt für PlayerColumn und die
+   Blockköpfe in KniffelExtrem. */
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--sheet-head);
+  background-clip: padding-box;
+  border: 4px solid transparent;
+  border-radius: 16px;
+  color: var(--sheet-head-ink);
+  font-weight: 700;
+  /* Glanzkante oben, damit die Kachel gewölbt wirkt. */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 .players-area {
@@ -150,84 +329,131 @@ input, textarea, [contenteditable] {
   display: flex;
   justify-content: space-evenly;
   align-items: center;
-  background: #121212;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(180deg, #1a2070 0%, #11164a 100%);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-top: 1px solid var(--glass-border);
+  box-shadow: 0 -8px 22px rgba(4, 6, 30, 0.4);
 }
 
-/* Buttons */
-.btn-outline {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: white;
-  padding: 12px 22px;
-  border-radius: 8px;
-  font-size: 14px;
+/* Buttons --------------------------------------------------------------- */
+.btn-outline,
+.btn-primary,
+.btn-danger,
+.btn-grid-item,
+.btn-cta {
+  font-weight: 600;
   cursor: pointer;
   letter-spacing: 0.5px;
+  /* Gedrückt: kurz einsinken statt nur umfärben. */
+  transition: transform 0.12s var(--ease-out), filter 0.12s, box-shadow 0.12s;
+}
+.btn-outline:active,
+.btn-primary:active,
+.btn-danger:active,
+.btn-grid-item:active,
+.btn-cta:active,
+.btn-undo:active {
+  transform: scale(0.96);
+}
+.btn-primary:disabled,
+.btn-outline:disabled,
+.btn-danger:disabled,
+.btn-cta:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn-outline {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-size: 14px;
   min-height: 44px;
+}
+.btn-outline:active {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .btn-primary {
-  background: #673ab7;
+  background: var(--grad-primary);
   border: none;
   color: white;
   padding: 12px 22px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 14px;
-  cursor: pointer;
-  letter-spacing: 0.5px;
   min-height: 44px;
+  box-shadow: var(--shadow-btn);
 }
-
 .btn-primary:active {
-  background: #7e57c2;
+  filter: brightness(1.12);
 }
 
-.btn-danger {
-  background: transparent;
-  border: 1px solid #ff5252;
-  color: #ff5252;
+/* Haupt-Aktion in Bernstein, wie der runde gelbe Knopf der Vorlage. Dunkle
+   Schrift, weil Weiß auf Gelb nur 1,5:1 hätte (dunkel: 8,4:1 … 12,1:1). */
+.btn-cta {
+  background: var(--grad-amber);
+  border: none;
+  color: #2b1700;
   padding: 12px 22px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 14px;
-  cursor: pointer;
-  letter-spacing: 0.5px;
+  font-weight: 700;
   min-height: 44px;
+  box-shadow: 0 6px 16px rgba(255, 159, 28, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
+/* Es gab diese Regel doppelt (erst Outline, dann gefüllt) — es gilt die
+   gefüllte, deshalb jetzt nur noch eine. Weiß auf #cf3049: 5,0:1. */
+.btn-danger {
+  background: var(--grad-danger);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  min-height: 44px;
+  box-shadow: 0 6px 16px rgba(168, 28, 52, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
 .btn-danger:active {
-  background: rgba(255, 82, 82, 0.15);
+  filter: brightness(0.9);
 }
 
 .btn-delete {
   background: transparent;
   border: none;
-  color: #ff5252;
+  color: var(--danger-ink);
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   padding: 8px 4px;
 }
 
 .btn-grid-item {
-  background: #673ab7;
+  background: var(--grad-primary);
   border: none;
   color: white;
-  padding: 10px 16px;
-  border-radius: 6px;
+  padding: 10px 18px;
+  border-radius: 999px;
   font-size: 15px;
-  cursor: pointer;
+  min-height: 44px;
   min-width: 62px;
+  box-shadow: var(--shadow-btn);
 }
 
-.btn-grid-item:active {
-  background: #7e57c2;
+/* Dialoge --------------------------------------------------------------- */
+@keyframes dialogIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Add Player Dialog */
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(5, 7, 30, 0.62);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -236,8 +462,10 @@ input, textarea, [contenteditable] {
 }
 
 .dialog {
-  background: #2a2a2a;
-  border-radius: 12px;
+  background: var(--surface-grad);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   padding: 24px;
   width: 100%;
   max-width: 360px;
@@ -248,26 +476,32 @@ input, textarea, [contenteditable] {
      scrollen als die Buttons aus dem Bild schieben. */
   max-height: 100%;
   overflow-y: auto;
+  animation: dialogIn 0.28s var(--ease-out) both;
 }
 
 .dialog-title {
   font-size: 18px;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .dialog-input {
-  background: #3a3a3a;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 16px;
   color: white;
   font-size: 16px;
-  padding: 10px 12px;
+  padding: 11px 16px;
   outline: none;
   width: 100%;
 }
 
+.dialog-input::placeholder {
+  color: var(--text-faint);
+}
+
 .dialog-input:focus {
-  border-color: #673ab7;
+  border-color: var(--lilac);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.35);
 }
 
 .dialog-actions {
@@ -276,25 +510,55 @@ input, textarea, [contenteditable] {
   gap: 12px;
 }
 
-.btn-danger {
-  background: #e53935;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 20px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.btn-danger:active {
-  background: #b71c1c;
-}
-
 .dialog-text {
-  color: #888;
+  color: var(--text-dim);
   font-size: 14px;
   margin: 8px 0 16px;
   text-align: center;
+}
+
+/* Bottom-Sheet des Eingabe-Modals (components/ScoreInputModal.jsx): oben stark
+   gerundet, mit Griff, damit klar ist, dass es von unten hereinkommt. */
+@keyframes sheetIn {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 7, 30, 0.62);
+  display: flex;
+  align-items: flex-end;
+  z-index: 1000;
+}
+.sheet {
+  position: relative;
+  width: 100%;
+  padding: 34px 24px 40px;
+  background: var(--surface-grad);
+  border: 1px solid var(--glass-border);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -18px 50px rgba(3, 5, 28, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: sheetIn 0.3s var(--ease-out) both;
+}
+.sheet::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateX(-50%);
+}
+.sheet-rule {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 @keyframes spin {
@@ -310,8 +574,8 @@ input, textarea, [contenteditable] {
 .spinner {
   display: inline-block;
   box-sizing: border-box;
-  border: 2.5px solid rgba(103, 58, 183, 0.25);
-  border-top-color: #673ab7;
+  border: 2.5px solid rgba(var(--primary-rgb), 0.3);
+  border-top-color: var(--accent-cyan);
   border-radius: 50%;
   animation: rotate360 0.8s linear infinite;
 }
@@ -328,14 +592,14 @@ input, textarea, [contenteditable] {
      das will man beim Zurücknehmen eines Fehltipps nicht treffen. */
   bottom: calc(env(safe-area-inset-bottom) + 84px);
   transform: translateX(-50%);
-  background: rgba(30, 30, 30, 0.96);
-  border: 1px solid rgba(103, 58, 183, 0.5);
+  background: var(--surface-grad);
+  border: 1px solid rgba(var(--primary-rgb), 0.6);
   color: #fff;
   font-size: 13px;
-  padding: 12px 18px;
-  border-radius: 12px;
+  padding: 12px 20px;
+  border-radius: 999px;
   z-index: 10000;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-soft), 0 0 0 1px rgba(255, 255, 255, 0.05);
   animation: toastIn 0.25s ease-out;
   max-width: calc(100vw - 32px);
   text-align: center;
@@ -350,9 +614,9 @@ input, textarea, [contenteditable] {
 .toast-action {
   background: none;
   border: none;
-  color: #b388ff;
+  color: var(--accent-yellow);
   font-size: 13px;
-  font-weight: bold;
+  font-weight: 700;
   cursor: pointer;
   padding: 2px 4px;
   flex-shrink: 0;
@@ -364,21 +628,21 @@ input, textarea, [contenteditable] {
   left: 50%;
   bottom: 28px;
   transform: translateX(-50%);
-  background: #673ab7;
+  background: var(--grad-amber);
   border: none;
-  color: #fff;
+  color: #2b1700;
   font-size: 13px;
-  font-weight: bold;
+  font-weight: 700;
   padding: 10px 18px;
   border-radius: 999px;
   z-index: 9999;
   cursor: pointer;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 159, 28, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   animation: toastIn 0.25s ease-out;
 }
 
 .update-pill:active {
-  background: #7e57c2;
+  filter: brightness(0.92);
 }
 
 /* --- Kniffel-Feier (siehe components/KniffelCelebration.jsx) -------------- */
@@ -510,6 +774,7 @@ input, textarea, [contenteditable] {
   }
 }
 
+
 /* --- Vorschlagsliste "schon gespielt" (RecentPlayersPicker.jsx) ----------- */
 .recent-players {
   display: flex;
@@ -525,14 +790,14 @@ input, textarea, [contenteditable] {
   background: none;
   border: none;
   padding: 0;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-dim);
   font-size: 13px;
   cursor: pointer;
   text-align: left;
 }
 
 .recent-players-toggle:hover {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text);
 }
 
 .recent-players-list {
@@ -543,8 +808,8 @@ input, textarea, [contenteditable] {
      lange Historie die Buttons aus dem Dialog. */
   max-height: 168px;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
   padding: 4px;
 }
 
@@ -553,9 +818,9 @@ input, textarea, [contenteditable] {
   align-items: center;
   gap: 8px;
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface);
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   color: white;
   font-size: 15px;
   padding: 9px 12px;
@@ -565,7 +830,7 @@ input, textarea, [contenteditable] {
 
 .recent-players-item:hover,
 .recent-players-item:active {
-  background: rgba(103, 58, 183, 0.35);
+  background: rgba(var(--primary-rgb), 0.4);
 }
 
 .recent-players-name {
@@ -576,7 +841,7 @@ input, textarea, [contenteditable] {
 }
 
 .recent-players-count {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-faint);
   font-size: 12px;
   flex-shrink: 0;
 }
@@ -584,17 +849,17 @@ input, textarea, [contenteditable] {
 /* Tastatur-Hinweise im ScoreInputModal — nur am Laptop sichtbar. */
 .key-hint {
   text-align: center;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-faint);
   font-size: 12px;
 }
 
 .key-hint kbd {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 1px 6px;
   font-family: inherit;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-soft);
 }
 
 /* --- Würfelanzahl oben (components/ScoreInputModal.jsx) ------------------- */
@@ -604,47 +869,60 @@ input, textarea, [contenteditable] {
   gap: 10px;
 }
 
+/* Große, freundliche Kacheln: Zahl oben, Punkte darunter. */
 .count-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-height: 72px;
-  border-radius: 12px;
-  border: 1px solid var(--sheet-rule);
-  background: rgba(255, 255, 255, 0.06);
+  min-height: 76px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
   color: white;
   cursor: pointer;
+  transition: transform 0.12s var(--ease-out), background 0.12s;
 }
 
 .count-btn:active {
-  background: #673ab7;
+  transform: scale(0.94);
+  background: var(--grad-primary);
 }
 
 .count-num {
   font-size: 28px;
-  font-weight: bold;
+  font-weight: 700;
   line-height: 1;
 }
 
 .count-sub {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-dim);
 }
 
-/* Der Wert, der schon in der Zelle steht. */
+/* Der Wert, der schon in der Zelle steht: leuchtender Lila-Ring. */
 .count-btn.is-current {
-  border-color: var(--sheet-accent);
-  background: rgba(179, 136, 255, 0.18);
+  border-color: var(--lilac);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.55), rgba(var(--primary-rgb), 0.25));
+  box-shadow: 0 0 0 2px var(--lilac), 0 0 20px rgba(var(--primary-rgb), 0.7);
 }
 
+/* 5 = Kniffel: Gold, damit die Kachel auffällt. */
 .count-btn.is-kniffel {
-  border-color: rgba(255, 196, 0, 0.55);
+  border-color: rgba(255, 196, 0, 0.7);
+  background: linear-gradient(180deg, rgba(255, 196, 0, 0.26), rgba(255, 159, 28, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 14px rgba(255, 196, 0, 0.25);
+}
+
+.count-btn.is-kniffel.is-current {
+  box-shadow: 0 0 0 2px var(--kniffel-gold), 0 0 22px rgba(255, 196, 0, 0.55);
 }
 
 .count-btn.is-kniffel .count-sub {
   color: var(--kniffel-gold);
+  font-weight: 600;
 }
 
 /* --- Auswahlrad (components/PickerWheel.jsx) ------------------------------ */
@@ -670,7 +948,7 @@ input, textarea, [contenteditable] {
 }
 
 .wheel:focus-visible .wheel-band {
-  border-color: #b388ff;
+  border-color: var(--accent-yellow);
 }
 
 .wheel-list {
@@ -703,19 +981,21 @@ input, textarea, [contenteditable] {
 
 .wheel-value {
   font-size: 26px;
-  font-weight: bold;
+  font-weight: 700;
   color: white;
   /* opacity und scale setzt PickerWheel beim Scrollen. */
   will-change: transform, opacity;
 }
 
+/* Auswahlband: gerundet, mit violettem Schein. */
 .wheel-band {
   position: absolute;
-  left: 0;
-  right: 0;
-  border-top: 1px solid rgba(103, 58, 183, 0.9);
-  border-bottom: 1px solid rgba(103, 58, 183, 0.9);
-  background: rgba(103, 58, 183, 0.12);
+  left: 8px;
+  right: 8px;
+  border: 1px solid rgba(var(--primary-rgb), 0.95);
+  border-radius: 16px;
+  background: rgba(var(--primary-rgb), 0.2);
+  box-shadow: 0 0 18px rgba(var(--primary-rgb), 0.35);
   pointer-events: none;
   z-index: 1;
 }
@@ -723,17 +1003,251 @@ input, textarea, [contenteditable] {
 /* Rückgängig-Knopf in der Fußzeile: nur das Symbol, damit RESTART und der
    Hauptknopf Platz behalten. */
 .btn-undo {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
   width: 48px;
   min-height: 44px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
+  transition: transform 0.12s var(--ease-out);
 }
 .btn-undo:disabled {
-  opacity: 0.3;
+  opacity: 0.35;
   cursor: default;
+}
+
+/* --- Startseite (screens/ModeSelect.jsx) ---------------------------------- */
+.home {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 20px max(24px, env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+/* margin: auto statt justify-content: center — zentriert, solange alles passt,
+   und scrollt sauber von oben, wenn nicht (center würde oben abschneiden). */
+.home-inner {
+  margin: auto 0;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+.home-art {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin-bottom: 2px;
+  animation: floatY 6s ease-in-out infinite;
+}
+.home-art svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.home-rocket {
+  position: absolute;
+  right: -30px;
+  bottom: 2px;
+  width: 46px;
+  height: 46px;
+  transform: rotate(18deg);
+  animation: floatY 4.5s ease-in-out -1.5s infinite;
+}
+.home-title {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 4px 24px rgba(var(--primary-rgb), 0.7);
+}
+.home-title b {
+  color: var(--accent-green);
+  font-weight: 700;
+}
+.home-sub {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+@keyframes floatY {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 -7px; }
+}
+
+/* Modus-Karte: Glasfläche mit Verlauf, riesige blasse Zahl dahinter, runder
+   Bernstein-Knopf mit Pfeil wie in der Vorlage. --accent färbt Schein und Zahl
+   pro Modus, die Karte selbst bleibt ein Button (ganze Fläche tippbar). */
+.mode-card {
+  --accent: var(--accent-cyan);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 76px 14px 14px;
+  text-align: left;
+  color: white;
+  cursor: pointer;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 60%),
+    linear-gradient(135deg, #2f3597 0%, #1c2270 100%);
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: transform 0.15s var(--ease-out);
+}
+.mode-card:active { transform: scale(0.98); }
+/* Die große Umriss-Zahl: nur Kontur, kaum sichtbar, wie in der Vorlage. */
+.mode-num {
+  position: absolute;
+  right: 54px;
+  bottom: -26px;
+  font-size: 118px;
+  font-weight: 700;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--accent) 38%, transparent);
+  pointer-events: none;
+}
+.mode-icon {
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.06));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 14px rgba(3, 5, 28, 0.4);
+}
+.mode-text { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mode-label {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.mode-desc {
+  font-size: 12px;
+  line-height: 1.35;
+  /* --text-soft statt -dim: in der Ecke liegt der Akzent-Schein, dort bleibt
+     die Beschreibung auf 4,8:1 (cyan, schlechtester Fall). */
+  color: var(--text-soft);
+}
+.mode-go {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin-top: -24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--grad-amber);
+  color: #2b1700;
+  font-size: 22px;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(255, 159, 28, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.home-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.home-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease-out);
+}
+.home-link:active { transform: scale(0.95); }
+
+/* --- Ladebildschirm (LoadingScreen in App.jsx) ---------------------------- */
+/* Ein Planet nur aus Radialverläufen: Ozean als Kugel, dazu zwei grüne
+   "Kontinente" als gedrehte Ellipsen, darüber ein Glanzpunkt und ein
+   Atmosphärenschein. Unten halb aus dem Bild geschoben. */
+.splash-planet {
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: -150px;
+  width: 360px;
+  height: 360px;
+  margin-left: -180px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.3), transparent 28%),
+    radial-gradient(ellipse 22% 15% at 58% 24%, #4ade80 0 97%, transparent 100%),
+    radial-gradient(ellipse 14% 20% at 30% 40%, #36c46c 0 97%, transparent 100%),
+    radial-gradient(ellipse 18% 10% at 70% 46%, #5be28f 0 97%, transparent 100%),
+    radial-gradient(circle at 36% 30%, #4aa8ff 0%, #2a56e0 48%, #12206e 100%);
+  box-shadow: 0 0 60px rgba(60, 160, 255, 0.35), inset -30px -40px 70px rgba(5, 8, 40, 0.65);
+  opacity: 0.9;
+}
+.splash-title-a {
+  background: linear-gradient(90deg, var(--accent-yellow), var(--accent-pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 12px rgba(255, 95, 162, 0.45));
+}
+.splash-title-b {
+  color: #fff;
+  text-shadow: 0 0 18px rgba(60, 207, 255, 0.85);
+}
+.splash-fill {
+  background: linear-gradient(90deg, var(--accent-cyan), var(--lilac) 55%, var(--accent-pink));
+}
+
+/* Wer Bewegung reduziert haben will: Sterne stehen still, Karten und Dialoge
+   erscheinen ohne Gleiten. Die Zieldeckkraft bleibt (fill-mode both), nichts
+   geht unsichtbar verloren. */
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  .starfield,
+  .reveal,
+  .dialog,
+  .sheet,
+  .toast,
+  .update-pill,
+  .home-art,
+  .home-rocket {
+    animation: none !important;
+  }
+  .btn-outline, .btn-primary, .btn-danger, .btn-grid-item, .btn-cta,
+  .btn-undo, .count-btn, .mode-card, .home-link {
+    transition: none;
+  }
 }

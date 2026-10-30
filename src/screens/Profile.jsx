@@ -157,7 +157,6 @@ export default function Profile({ onBack }) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#1e1e1e',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -197,7 +196,7 @@ export default function Profile({ onBack }) {
             <div style={{ fontSize: 40, marginTop: 24 }}>🔐</div>
             <div
               style={{
-                color: 'rgba(255,255,255,0.5)',
+                color: 'var(--text-dim)',
                 fontSize: 14,
                 textAlign: 'center',
                 maxWidth: 320,
@@ -225,7 +224,7 @@ export default function Profile({ onBack }) {
             <div style={{ width: '100%', maxWidth: 340 }}>
               <div
                 style={{
-                  color: 'rgba(255,255,255,0.4)',
+                  color: 'var(--text-faint)',
                   fontSize: 12,
                   letterSpacing: 1,
                   marginBottom: 6,
@@ -257,7 +256,7 @@ export default function Profile({ onBack }) {
               </div>
               <div
                 style={{
-                  color: 'rgba(255,255,255,0.3)',
+                  color: 'var(--text-faint)',
                   fontSize: 11,
                   marginTop: 4,
                 }}
@@ -272,9 +271,9 @@ export default function Profile({ onBack }) {
               style={{
                 width: '100%',
                 maxWidth: 340,
-                background: 'rgba(103,58,183,0.12)',
-                border: '1px solid rgba(103,58,183,0.3)',
-                borderRadius: 12,
+                background: 'rgba(var(--primary-rgb),0.12)',
+                border: '1px solid rgba(var(--primary-rgb),0.3)',
+                borderRadius: 'var(--radius-md)',
                 padding: 18,
                 display: 'flex',
                 flexDirection: 'column',
@@ -282,7 +281,7 @@ export default function Profile({ onBack }) {
                 gap: 10,
               }}
             >
-              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+              <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
                 Dein Freund-Code
               </div>
               {qrSrc && (
@@ -291,12 +290,12 @@ export default function Profile({ onBack }) {
                   alt="Dein QR-Code"
                   width={200}
                   height={200}
-                  style={{ borderRadius: 8, background: 'white', padding: 6 }}
+                  style={{ borderRadius: 'var(--radius-sm)', background: 'white', padding: 6 }}
                 />
               )}
               <div
                 style={{
-                  color: '#b39ddb',
+                  color: 'var(--lilac)',
                   fontSize: 18,
                   fontWeight: 'bold',
                   letterSpacing: 1,
@@ -306,7 +305,7 @@ export default function Profile({ onBack }) {
               </div>
               <div
                 style={{
-                  color: 'rgba(255,255,255,0.35)',
+                  color: 'var(--text-faint)',
                   fontSize: 11,
                   textAlign: 'center',
                 }}
@@ -328,7 +327,7 @@ export default function Profile({ onBack }) {
               >
                 <div
                   style={{
-                    color: 'rgba(255,255,255,0.4)',
+                    color: 'var(--text-faint)',
                     fontSize: 12,
                     letterSpacing: 1,
                   }}
@@ -340,7 +339,7 @@ export default function Profile({ onBack }) {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#b39ddb',
+                    color: 'var(--lilac)',
                     fontSize: 13,
                     cursor: 'pointer',
                   }}
@@ -350,13 +349,13 @@ export default function Profile({ onBack }) {
               </div>
 
               {loadingFriends ? (
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                <div style={{ color: 'var(--text-dim)', fontSize: 12 }}>
                   <Spinner row label="Lade Freunde…" size={16} />
                 </div>
               ) : friends.length === 0 ? (
                 <div
                   style={{
-                    color: 'rgba(255,255,255,0.3)',
+                    color: 'var(--text-faint)',
                     fontSize: 12,
                   }}
                 >
@@ -376,7 +375,7 @@ export default function Profile({ onBack }) {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         background: 'rgba(255,255,255,0.04)',
-                        borderRadius: 10,
+                        borderRadius: 'var(--radius-sm)',
                         padding: '10px 14px',
                       }}
                     >
@@ -386,7 +385,7 @@ export default function Profile({ onBack }) {
                         </div>
                         <div
                           style={{
-                            color: 'rgba(255,255,255,0.35)',
+                            color: 'var(--text-faint)',
                             fontSize: 11,
                           }}
                         >
@@ -398,7 +397,7 @@ export default function Profile({ onBack }) {
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#ff5252',
+                          color: 'var(--danger-ink)',
                           fontSize: 16,
                           cursor: 'pointer',
                           padding: '4px 8px',
@@ -454,7 +453,7 @@ export default function Profile({ onBack }) {
         <div style={{ width: '100%', maxWidth: 340, marginTop: 8 }}>
           <div
             style={{
-              color: 'rgba(255,255,255,0.4)',
+              color: 'var(--text-faint)',
               fontSize: 12,
               letterSpacing: 1,
               marginBottom: 6,
@@ -473,7 +472,7 @@ export default function Profile({ onBack }) {
               gap: 12,
               background: 'rgba(255,255,255,0.06)',
               border: 'none',
-              borderRadius: 12,
+              borderRadius: 'var(--radius-md)',
               padding: '14px 16px',
               color: 'white',
               textAlign: 'left',
@@ -488,7 +487,7 @@ export default function Profile({ onBack }) {
                 height: 22,
                 borderRadius: 11,
                 background:
-                  geoOn && !geoBlocked ? '#673ab7' : 'rgba(255,255,255,0.15)',
+                  geoOn && !geoBlocked ? 'var(--primary)' : 'rgba(255,255,255,0.15)',
                 position: 'relative',
                 flexShrink: 0,
                 transition: 'background 0.15s',
@@ -501,7 +500,7 @@ export default function Profile({ onBack }) {
                   left: geoOn && !geoBlocked ? 21 : 3,
                   width: 16,
                   height: 16,
-                  borderRadius: 8,
+                  borderRadius: 'var(--radius-sm)',
                   background: 'white',
                   transition: 'left 0.15s',
                 }}
@@ -511,7 +510,7 @@ export default function Profile({ onBack }) {
 
           <div
             style={{
-              color: 'rgba(255,255,255,0.4)',
+              color: 'var(--text-faint)',
               fontSize: 12,
               lineHeight: 1.5,
               marginTop: 8,
@@ -525,7 +524,7 @@ export default function Profile({ onBack }) {
           {!geoOn && !geoBlocked && (
             <div
               style={{
-                color: 'rgba(255,255,255,0.3)',
+                color: 'var(--text-faint)',
                 fontSize: 11,
                 marginTop: 6,
               }}
@@ -542,8 +541,8 @@ export default function Profile({ onBack }) {
               border: 'none',
               padding: 0,
               color: forgotten
-                ? 'rgba(105,255,71,0.6)'
-                : 'rgba(255,100,100,0.5)',
+                ? 'var(--bonus-ok)'
+                : 'var(--danger-ink)',
               fontSize: 13,
               cursor: 'pointer',
             }}
@@ -556,7 +555,7 @@ export default function Profile({ onBack }) {
           <div className="dialog-overlay">
             <div className="dialog">
               <div className="dialog-title">Daten dieses Geräts löschen?</div>
-              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+              <div style={{ color: 'var(--text-dim)', fontSize: 14 }}>
                 Entfernt alle Sitzungen dieses Geräts aus der Städte-Statistik.
                 Deine Spiele und dein Konto bleiben unberührt.
               </div>
@@ -581,7 +580,7 @@ export default function Profile({ onBack }) {
         )}
 
         {error && (
-          <div style={{ color: '#ff5252', fontSize: 13, textAlign: 'center' }}>
+          <div style={{ color: 'var(--danger-ink)', fontSize: 13, textAlign: 'center' }}>
             {error}
           </div>
         )}

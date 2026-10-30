@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { formatDuration } from '../lib/cityStats'
 import { WORLD_RINGS } from '../lib/worldLand'
 
-const PURPLE = '#b388ff'
+const ACCENT = 'var(--accent-cyan)'
 const GOLD = '#ffc400'
-const GRID = 'rgba(255,255,255,0.08)'
+const GRID = 'rgba(255,255,255,0.12)'
 const LAND = 'rgba(255,255,255,0.07)'
 const COAST = 'rgba(255,255,255,0.16)'
-const MUTED = 'rgba(255,255,255,0.4)'
+const MUTED = 'var(--text-faint)'
 const MEDALS = ['🥇', '🥈', '🥉']
 
 const W = 320
@@ -41,9 +41,9 @@ function gridStep(spanDeg) {
   return STEPS.find((s) => spanDeg / s <= 6) ?? 45
 }
 
-// PURPLE -> GOLD, je länger pro Gerät gespielt wird.
+// Cyan (ACCENT) -> GOLD, je länger pro Gerät gespielt wird.
 function heat(t) {
-  const from = [0xb3, 0x88, 0xff]
+  const from = [0x3c, 0xcf, 0xff]
   const to = [0xff, 0xc4, 0x00]
   const k = Math.max(0, Math.min(1, t))
   const rgb = from.map((v, i) => Math.round(v + (to[i] - v) * k))
@@ -147,7 +147,7 @@ export default function CityMap({ cities = [] }) {
             aspectRatio: `${W} / ${H}`,
             display: 'block',
             background: 'rgba(255,255,255,0.03)',
-            borderRadius: 10,
+            borderRadius: 'var(--radius-sm)',
           }}
         >
           {view.land.map((d, i) => (
@@ -231,7 +231,7 @@ export default function CityMap({ cities = [] }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                color: active ? PURPLE : 'white',
+                color: active ? ACCENT : 'white',
               }}
             >
               <span style={{ width: 22, color: MUTED, fontSize: 12 }}>

@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from 'react'
 // Die Farben sind dieselben wie im Block (PlayerColumn.jsx): grün für einen
 // Gewinn, rot für einen Verlust.
 const GREEN = '#69ff47'
-const RED = '#ff5252'
-const GREY = 'rgba(255,255,255,0.45)'
+const RED = '#ff7b7b'
+const GREY = 'var(--text-faint)'
 
 const COUNT_MS = 900
 
@@ -65,7 +65,7 @@ export default function RatingDelta({ before, after, delta, index = 0 }) {
         animation: `ratingIn 320ms ease-out ${delay}ms both`,
       }}
     >
-      <span style={{ color: 'rgba(255,255,255,0.45)' }}>
+      <span style={{ color: 'var(--text-faint)' }}>
         Rating {before} → <span style={{ color }}>{shown}</span>
       </span>
       <span style={{ color, fontWeight: 'bold', fontSize: 13 }}>

@@ -207,7 +207,6 @@ export default function LuckyScoreGame({ onExit }) {
         style={{
           position: "fixed",
           inset: 0,
-          background: "#1e1e1e",
           display: "flex",
           flexDirection: "column",
           padding: 24,
@@ -232,7 +231,7 @@ export default function LuckyScoreGame({ onExit }) {
           </button>
           <div
             style={{
-              color: "#673ab7",
+              color: "var(--lilac)",
               fontWeight: "bold",
               fontSize: 20,
               letterSpacing: 3,
@@ -242,7 +241,7 @@ export default function LuckyScoreGame({ onExit }) {
           </div>
         </div>
 
-        <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
+        <div style={{ color: "var(--text-dim)", fontSize: 13 }}>
           Jeder tippt seinen Score — wer am nächsten dran ist gewinnt.
         </div>
 
@@ -253,8 +252,8 @@ export default function LuckyScoreGame({ onExit }) {
               display: "flex",
               justifyContent: "space-between",
               color: "white",
-              background: "rgba(103,58,183,0.15)",
-              borderRadius: 10,
+              background: "var(--card-bg)",
+              borderRadius: 'var(--radius-sm)',
               padding: "10px 14px",
             }}
           >
@@ -263,13 +262,13 @@ export default function LuckyScoreGame({ onExit }) {
               {identities[i] && (
                 <span
                   title="Verknüpfter Account — bekommt das Spiel auf die eigene Statistik"
-                  style={{ color: "#673ab7" }}
+                  style={{ color: "var(--lilac)" }}
                 >
                   ☁
                 </span>
               )}
             </span>
-            <span style={{ color: "#673ab7", fontWeight: "bold" }}>
+            <span style={{ color: "var(--lilac)", fontWeight: "bold" }}>
               Tipp: {predictions[i]}
             </span>
           </div>
@@ -352,7 +351,6 @@ export default function LuckyScoreGame({ onExit }) {
         style={{
           position: "fixed",
           inset: 0,
-          background: "#1e1e1e",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -364,7 +362,7 @@ export default function LuckyScoreGame({ onExit }) {
         <div style={{ fontSize: 48 }}>🔮</div>
         <div
           style={{
-            color: "#673ab7",
+            color: "var(--lilac)",
             fontWeight: "bold",
             fontSize: 22,
             letterSpacing: 3,
@@ -380,12 +378,12 @@ export default function LuckyScoreGame({ onExit }) {
               width: "100%",
               maxWidth: 340,
               background:
-                i === 0 ? "rgba(103,58,183,0.3)" : "rgba(255,255,255,0.05)",
+                i === 0 ? "rgba(var(--primary-rgb),0.3)" : "var(--surface)",
               border:
                 i === 0
-                  ? "2px solid #673ab7"
-                  : "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12,
+                  ? "2px solid var(--lilac)"
+                  : "1px solid var(--glass-border)",
+              borderRadius: "var(--radius-md)",
               padding: "14px 18px",
               display: "flex",
               flexDirection: "column",
@@ -396,7 +394,7 @@ export default function LuckyScoreGame({ onExit }) {
               {i === 0 ? "🏆 " : i === 1 ? "🥈 " : "🥉 "}
               {r.name}
             </div>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
+            <div style={{ color: "var(--text-dim)", fontSize: 13 }}>
               Tipp: {r.pred} · Erreicht: {r.total} · Abweichung: {r.diff}
             </div>
             {ratingRows[r.pIdx] && (
@@ -407,7 +405,7 @@ export default function LuckyScoreGame({ onExit }) {
 
         <div
           style={{
-            color: "rgba(255,255,255,0.35)",
+            color: "var(--text-faint)",
             fontSize: 12,
             marginTop: 4,
           }}
@@ -453,7 +451,7 @@ export default function LuckyScoreGame({ onExit }) {
           style={{
             background: "none",
             border: "none",
-            color: "rgba(255,255,255,0.75)",
+            color: "var(--text-soft)",
             fontSize: 17,
             cursor: "pointer",
             width: 40,

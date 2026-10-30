@@ -21,7 +21,7 @@ export default function Spinner({ label, size = 20, row = false }) {
     >
       {ring}
       {label && (
-        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+        <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
           {label}
         </div>
       )}

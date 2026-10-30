@@ -4,12 +4,12 @@ import { pairRate, strongestHabits, ORDER_INDICES } from '../logic/orderStats'
 import { topFace } from '../logic/kniffelFaces'
 import Die, { FACE_NAME } from './Die'
 
-const PURPLE = '#b388ff'
+const ACCENT = 'var(--accent-cyan)'
 const GOLD = '#ffc400'
 const WIN = '#69ff47'
-const LOSS = '#ff5252'
-const GRID = 'rgba(255,255,255,0.08)'
-const MUTED = 'rgba(255,255,255,0.4)'
+const LOSS = '#ff7b7b'
+const GRID = 'rgba(255,255,255,0.12)'
+const MUTED = 'var(--text-faint)'
 
 function Empty({ text = 'Keine Daten' }) {
   return (
@@ -52,7 +52,7 @@ export function ScoreLineChart({ history }) {
         <polyline
           points={pts}
           fill="none"
-          stroke={PURPLE}
+          stroke={ACCENT}
           strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -64,7 +64,7 @@ export function ScoreLineChart({ history }) {
           cx={sx(i)}
           cy={sy(y)}
           r={i === bestIdx ? 3.5 : 2.5}
-          fill={i === bestIdx ? WIN : PURPLE}
+          fill={i === bestIdx ? WIN : ACCENT}
         />
       ))}
     </svg>
@@ -109,7 +109,7 @@ export function Histogram({ scores }) {
                 width={bw - 2}
                 height={h}
                 rx="3"
-                fill={PURPLE}
+                fill={ACCENT}
               />
             )}
             {i % 2 === 0 && (
@@ -166,7 +166,7 @@ export function FormStrip({ form }) {
           />
         ))}
       </div>
-      <div style={{ marginTop: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
+      <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-dim)' }}>
         {streak > 0
           ? `🔥 ${streak} ${streak === 1 ? 'Sieg' : 'Siege'} in Folge`
           : streak < 0
@@ -225,7 +225,7 @@ function MiniBars({ bars }) {
               width: '100%',
               height: 24 * (b.value / max),
               minHeight: b.value > 0 ? 2 : 0,
-              background: PURPLE,
+              background: ACCENT,
               borderRadius: 2,
             }}
           />
@@ -343,12 +343,12 @@ export function HeadToHeadMatrix({ opponents }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {rows.map(([name, r]) => {
         const even = r.won === r.lost
-        const color = even ? 'rgba(255,255,255,0.6)' : r.won > r.lost ? WIN : LOSS
+        const color = even ? 'var(--text-dim)' : r.won > r.lost ? WIN : LOSS
         // Die Punktebilanz kann anders ausgehen als die Siegbilanz: viele knappe
         // Siege schlagen wenige hohe. Deshalb eine eigene Farbe.
         const ptsEven = r.pointsFor === r.pointsAgainst
         const ptsColor = ptsEven
-          ? 'rgba(255,255,255,0.6)'
+          ? 'var(--text-dim)'
           : r.pointsFor > r.pointsAgainst
             ? WIN
             : LOSS
@@ -360,7 +360,7 @@ export function HeadToHeadMatrix({ opponents }) {
               flexDirection: 'column',
               gap: 3,
               background: 'rgba(255,255,255,0.04)',
-              borderRadius: 8,
+              borderRadius: 'var(--radius-sm)',
               padding: '8px 12px',
             }}
           >
@@ -409,7 +409,7 @@ export function HeadToHeadMatrix({ opponents }) {
 // Wie eindeutig ist eine Gewohnheit? Nur für die Einordnung im Text.
 function verdict(rate) {
   if (rate >= 0.85) return { text: 'feste Gewohnheit', color: WIN }
-  if (rate >= 0.65) return { text: 'klare Tendenz', color: PURPLE }
+  if (rate >= 0.65) return { text: 'klare Tendenz', color: ACCENT }
   if (rate >= 0.55) return { text: 'leichte Tendenz', color: MUTED }
   return { text: 'kein Muster', color: MUTED }
 }
@@ -426,13 +426,13 @@ function CatSelect({ value, onChange }) {
         background: 'rgba(255,255,255,0.08)',
         color: 'white',
         border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 8,
+        borderRadius: 'var(--radius-sm)',
         padding: '7px 8px',
         fontSize: 13,
       }}
     >
       {ORDER_INDICES.map((ci) => (
-        <option key={ci} value={ci} style={{ background: '#1e1e1e' }}>
+        <option key={ci} value={ci} style={{ background: 'var(--surface-solid)' }}>
           {CAT_LABEL[ci]}
         </option>
       ))}
@@ -470,7 +470,7 @@ export function OrderStatsView({ stat }) {
       <div
         style={{
           background: 'rgba(255,255,255,0.04)',
-          borderRadius: 10,
+          borderRadius: 'var(--radius-sm)',
           padding: 12,
         }}
       >
@@ -568,7 +568,7 @@ export function OrderStatsView({ stat }) {
                     width: 12,
                     height: 12,
                     borderRadius: '50%',
-                    background: PURPLE,
+                    background: ACCENT,
                   }}
                 />
               </div>
@@ -604,7 +604,7 @@ export function OrderStatsView({ stat }) {
                   alignItems: 'center',
                   gap: 8,
                   background: 'rgba(255,255,255,0.04)',
-                  borderRadius: 8,
+                  borderRadius: 'var(--radius-sm)',
                   padding: '7px 10px',
                 }}
               >
@@ -614,7 +614,7 @@ export function OrderStatsView({ stat }) {
                 </span>
                 <span
                   style={{
-                    color: h.rate >= 0.85 ? WIN : PURPLE,
+                    color: h.rate >= 0.85 ? WIN : ACCENT,
                     fontSize: 12,
                     fontWeight: 'bold',
                     flexShrink: 0,
@@ -669,7 +669,7 @@ export function KniffelFaceView({ stat }) {
                   width: `${(count / max) * 100}%`,
                   height: '100%',
                   borderRadius: 5,
-                  background: isTop ? GOLD : PURPLE,
+                  background: isTop ? GOLD : ACCENT,
                   transition: 'width 0.3s',
                 }}
               />
@@ -681,7 +681,7 @@ export function KniffelFaceView({ stat }) {
                 textAlign: 'right',
                 fontSize: 13,
                 fontWeight: isTop ? 'bold' : 'normal',
-                color: isTop ? GOLD : 'rgba(255,255,255,0.75)',
+                color: isTop ? GOLD : 'var(--text-soft)',
               }}
             >
               {count}

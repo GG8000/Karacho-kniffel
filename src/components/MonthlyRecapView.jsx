@@ -5,7 +5,7 @@ import {
   monthLabel,
 } from '../logic/monthlyRecap'
 
-const MUTED = 'rgba(255,255,255,0.4)'
+const MUTED = 'var(--text-faint)'
 
 const MODE_LABEL = { normal: 'Normal', extrem: 'Extrem', lucky: 'Lucky' }
 
@@ -85,9 +85,9 @@ export default function MonthlyRecapView({ games }) {
       {/* Kurzer Report */}
       <div
         style={{
-          background: 'rgba(103,58,183,0.15)',
-          border: '1px solid rgba(103,58,183,0.4)',
-          borderRadius: 12,
+          background: 'var(--card-bg)',
+          border: '1px solid var(--card-border)',
+          borderRadius: 'var(--radius-md)',
           padding: '14px 16px',
           display: 'flex',
           flexDirection: 'column',
@@ -98,7 +98,7 @@ export default function MonthlyRecapView({ games }) {
           <div
             key={i}
             style={{
-              color: i === 0 ? 'white' : 'rgba(255,255,255,0.75)',
+              color: i === 0 ? 'white' : 'var(--text-soft)',
               fontSize: i === 0 ? 15 : 13,
               fontWeight: i === 0 ? 'bold' : 'normal',
               lineHeight: 1.45,
@@ -132,9 +132,9 @@ export default function MonthlyRecapView({ games }) {
                   gap: 10,
                   background:
                     i === 0 && p.wins > 0
-                      ? 'rgba(103,58,183,0.2)'
+                      ? 'rgba(var(--primary-rgb),0.2)'
                       : 'rgba(255,255,255,0.04)',
-                  borderRadius: 10,
+                  borderRadius: 'var(--radius-sm)',
                   padding: '10px 12px',
                 }}
               >
@@ -166,7 +166,7 @@ export default function MonthlyRecapView({ games }) {
                       flexShrink: 0,
                       fontSize: 12,
                       fontWeight: 'bold',
-                      color: p.delta > 0 ? '#69ff47' : '#ff5252',
+                      color: p.delta > 0 ? 'var(--bonus-ok)' : 'var(--danger-ink)',
                     }}
                   >
                     {p.delta > 0 ? '▲' : '▼'} {Math.abs(p.delta)}

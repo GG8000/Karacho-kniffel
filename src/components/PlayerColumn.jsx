@@ -32,13 +32,11 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
 
   return (
     <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--sheet-rule)' }}>
-      <div style={{
-        height: 50, flexShrink: 0, background: 'var(--sheet-head)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 'bold', color: 'var(--sheet-head-ink)', fontSize: 14,
-        letterSpacing: 0.3,
-        position: 'relative', padding: '0 24px 0 4px',
-        overflow: 'hidden',
+      {/* Gerundeter Verlaufs-Chip (.sheet-head in App.css), 50 px hoch wie zuvor. */}
+      <div className="sheet-head" style={{
+        height: 50, flexShrink: 0,
+        fontSize: 14, letterSpacing: 0.3,
+        padding: '0 22px 0 2px',
       }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {name}
@@ -50,7 +48,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
             style={{
               position: 'absolute', right: 4, top: '50%',
               transform: 'translateY(-50%)',
-              background: 'rgba(0,0,0,0.25)', border: 'none',
+              background: 'rgba(0,0,0,0.28)', border: 'none',
               color: 'var(--sheet-head-ink)', borderRadius: '50%',
               width: 18, height: 18, fontSize: 10,
               cursor: 'pointer', display: 'flex',
@@ -72,7 +70,7 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
         const hasKniffelBonus = entry?.isKniffel === true  // ← das hat gefehlt
 
         // Bonus erreicht/verfehlt: Grün gegen Rot, wie in RatingDelta. TOTAL in
-        // hellem Lila — #673ab7 selbst wäre als Schrift auf Dunkel zu schwach.
+        // hellem Lila — --primary selbst wäre als Schrift auf Dunkel zu schwach.
         let color = 'var(--sheet-ink)'
         if (isUpperSum && entry) {
           color = absolutePoints >= 63 ? 'var(--bonus-ok)' : 'var(--bonus-miss)'
@@ -111,8 +109,8 @@ export default function PlayerColumn({ pIdx, name, categories, playerScores, onT
               backgroundColor: isSumRow
                 ? 'var(--sheet-sum)'
                 : cIdx === armedCIdx
-                  ? 'rgba(255,138,101,0.16)'
-                  : 'transparent',
+                  ? 'rgba(255,138,101,0.22)'
+                  : 'var(--cell-fill)',
               color,
               cursor: isSumRow || !canEdit ? 'default' : 'pointer',
               userSelect: 'none',

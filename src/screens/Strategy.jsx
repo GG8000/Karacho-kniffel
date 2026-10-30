@@ -9,9 +9,9 @@ import Die from '../components/Die'
 // verdichtet: die erste passende Regel gewinnt. Sie gelten für den Spielstart
 // mit leerem Block — später entscheidet zusätzlich, welche Felder noch offen sind.
 
-const PURPLE = '#673ab7'
-const LIGHT = '#b39ddb'
-const MUTED = 'rgba(255,255,255,0.55)'
+const PURPLE = 'var(--primary)'
+const LIGHT = 'var(--lilac)'
+const MUTED = 'var(--text-dim)'
 
 const VIDEO_URL = 'https://youtu.be/DOgb5wrb7mM'
 const POST_URL = 'https://ballparkfigures.substack.com/p/yahtzee'
@@ -112,9 +112,9 @@ function Note({ children }) {
   return (
     <div
       style={{
-        background: 'rgba(103,58,183,0.18)',
+        background: 'rgba(var(--primary-rgb),0.18)',
         border: `1px solid ${PURPLE}`,
-        borderRadius: 10,
+        borderRadius: 'var(--radius-sm)',
         padding: '11px 13px',
         color: 'white',
         fontSize: 13,
@@ -422,7 +422,6 @@ export default function Strategy({ onBack }) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#1e1e1e',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -457,13 +456,13 @@ export default function Strategy({ onBack }) {
             style={{
               flex: 1,
               padding: '8px 2px',
-              borderRadius: 8,
+              borderRadius: 'var(--radius-sm)',
               border: 'none',
               cursor: 'pointer',
               fontSize: 12,
               fontWeight: 'bold',
-              background: tab === id ? PURPLE : 'rgba(255,255,255,0.06)',
-              color: tab === id ? 'white' : 'rgba(255,255,255,0.5)',
+              background: tab === id ? PURPLE : 'var(--surface)',
+              color: tab === id ? 'white' : 'var(--text-dim)',
             }}
           >
             {label}

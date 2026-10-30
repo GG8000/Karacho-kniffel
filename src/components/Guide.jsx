@@ -15,9 +15,9 @@ import {
 // dieselbe Funktion, die den echten Block beschriftet. Damit kann die Anleitung
 // nicht auseinanderlaufen, wenn sich die Darstellung einmal ändert.
 
-const PURPLE = '#673ab7'
-const LIGHT = '#b39ddb'
-const MUTED = 'rgba(255,255,255,0.55)'
+const PURPLE = 'var(--primary)'
+const LIGHT = 'var(--lilac)'
+const MUTED = 'var(--text-dim)'
 
 // Aus der Blockpalette in App.css — die Anleitung soll denselben Block zeigen,
 // den man gleich vor sich hat.
@@ -40,7 +40,7 @@ function Cell({ cIdx, entry, ring = false }) {
         alignItems: 'center',
         justifyContent: 'center',
         border: '1px solid var(--sheet-rule)',
-        borderRadius: 4,
+        borderRadius: 'var(--radius-sm)',
         background: 'var(--sheet-bg)',
         color: 'var(--sheet-ink)',
         fontSize: 15,
@@ -100,9 +100,9 @@ function Note({ children }) {
   return (
     <div
       style={{
-        background: 'rgba(103,58,183,0.18)',
+        background: 'rgba(var(--primary-rgb),0.18)',
         border: `1px solid ${PURPLE}`,
-        borderRadius: 10,
+        borderRadius: 'var(--radius-sm)',
         padding: '11px 13px',
         color: 'white',
         fontSize: 13,
@@ -150,7 +150,9 @@ export default function Guide() {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#1e1e1e',
+        // Deckend, weil die Anleitung über dem Block liegt (der Raumhintergrund
+        // am body scheint hier nicht durch).
+        background: 'var(--space-bg)',
         zIndex: 15000,
         display: 'flex',
         flexDirection: 'column',
@@ -161,7 +163,9 @@ export default function Guide() {
         style={{
           flexShrink: 0,
           height: 50,
-          background: PURPLE,
+          background: 'var(--grad-head)',
+          borderRadius: '0 0 var(--radius-md) var(--radius-md)',
+          boxShadow: 'var(--shadow-soft)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',

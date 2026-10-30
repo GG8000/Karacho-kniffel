@@ -26,7 +26,7 @@ export default function PlayerOrderList({
     background: 'rgba(255,255,255,0.08)',
     border: 'none',
     borderRadius: 6,
-    color: disabled ? 'rgba(255,255,255,0.2)' : '#b39ddb',
+    color: disabled ? 'rgba(255,255,255,0.2)' : 'var(--lilac)',
     fontSize: 16,
     width: 32,
     height: 32,
@@ -44,13 +44,13 @@ export default function PlayerOrderList({
             alignItems: 'center',
             gap: 10,
             color: 'white',
-            background: 'rgba(103,58,183,0.15)',
-            borderRadius: 10,
+            background: 'var(--card-bg)',
+            borderRadius: 'var(--radius-sm)',
             padding: '8px 10px 8px 14px',
             marginBottom: 6,
           }}
         >
-          <span style={{ color: '#b39ddb', fontWeight: 'bold', width: 16 }}>
+          <span style={{ color: 'var(--lilac)', fontWeight: 'bold', width: 16 }}>
             {idx + 1}
           </span>
           <span style={{ flex: 1 }}>

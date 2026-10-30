@@ -38,7 +38,6 @@ export default function ProfileSetup({ onDone }) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#1e1e1e',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -50,7 +49,7 @@ export default function ProfileSetup({ onDone }) {
       <div style={{ fontSize: 48 }}>👤</div>
       <div
         style={{
-          color: '#673ab7',
+          color: 'var(--lilac)',
           fontSize: 20,
           fontWeight: 'bold',
           letterSpacing: 3,
@@ -60,7 +59,7 @@ export default function ProfileSetup({ onDone }) {
       </div>
       <div
         style={{
-          color: 'rgba(255,255,255,0.5)',
+          color: 'var(--text-dim)',
           fontSize: 13,
           textAlign: 'center',
           maxWidth: 320,
@@ -90,13 +89,13 @@ export default function ProfileSetup({ onDone }) {
       </button>
 
       {profile?.handle && (
-        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>
+        <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
           Dein Freund-Code: <b>{profile.handle}</b>
         </div>
       )}
 
       {error && (
-        <div style={{ color: '#ff5252', fontSize: 13, textAlign: 'center' }}>
+        <div style={{ color: 'var(--danger-ink)', fontSize: 13, textAlign: 'center' }}>
           {error}
         </div>
       )}

@@ -95,12 +95,12 @@ export default function UpdatePrompt() {
     <div className="dialog-overlay">
       <div className="dialog">
         <div className="dialog-title">🎲 Neue Version verfügbar</div>
-        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
+        <div style={{ color: 'var(--text-dim)', fontSize: 14 }}>
           Es gibt ein Update für den Kniffel-Block. Gespeicherte Spiele und
           Statistiken bleiben erhalten. Ein laufendes Spiel solltest du vorher
           zu Ende zählen.
         </div>
-        <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+        <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
           Installiert: {__APP_VERSION__}
         </div>
         <div className="dialog-actions">

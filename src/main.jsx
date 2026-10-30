@@ -1,6 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Analytics } from '@vercel/analytics/react'
+// Poppins wird mitgebündelt (nur latin, drei Schnitte): so lädt die PWA die
+// Schrift offline aus dem Precache und nicht von Google Fonts.
+import '@fontsource/poppins/latin-500.css'
+import '@fontsource/poppins/latin-600.css'
+import '@fontsource/poppins/latin-700.css'
 import App from './App'
 import { AuthProvider } from './auth/AuthContext'
 import Toaster from './components/Toaster'

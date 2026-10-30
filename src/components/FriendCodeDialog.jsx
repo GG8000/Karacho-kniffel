@@ -57,7 +57,7 @@ export default function FriendCodeDialog({ onClose, onResolve, takenIds = [] }) 
     >
       <div className="dialog">
         <div className="dialog-title">Freund per Code</div>
-        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+        <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
           Scanne den QR-Code deines Freundes oder tippe den Code (aus 👤 Konto).
           Verknüpfte Spieler bekommen das Spiel auf ihre eigene Statistik — auf
           ihrem eigenen Handy.
@@ -83,7 +83,7 @@ export default function FriendCodeDialog({ onClose, onResolve, takenIds = [] }) 
           onChange={(e) => setCode(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && resolve(code)}
         />
-        {error && <div style={{ color: '#ff5252', fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ color: 'var(--danger-ink)', fontSize: 13 }}>{error}</div>}
         <div className="dialog-actions">
           <button className="btn-outline" onClick={onClose}>
             Abbrechen

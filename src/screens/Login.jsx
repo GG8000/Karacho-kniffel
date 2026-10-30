@@ -47,7 +47,6 @@ export default function Login() {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#1e1e1e',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -59,7 +58,7 @@ export default function Login() {
       <div style={{ fontSize: 48 }}>🎲</div>
       <div
         style={{
-          color: '#673ab7',
+          color: 'var(--lilac)',
           fontSize: 26,
           fontWeight: 'bold',
           letterSpacing: 6,
@@ -69,7 +68,7 @@ export default function Login() {
       </div>
       <div
         style={{
-          color: 'rgba(255,255,255,0.5)',
+          color: 'var(--text-dim)',
           fontSize: 13,
           textAlign: 'center',
           maxWidth: 320,
@@ -82,7 +81,7 @@ export default function Login() {
       {!configured ? (
         <div
           style={{
-            color: '#f5a623',
+            color: 'var(--accent-yellow)',
             fontSize: 13,
             textAlign: 'center',
             maxWidth: 320,
@@ -106,9 +105,10 @@ export default function Login() {
             background: 'white',
             color: '#1f1f1f',
             border: 'none',
-            borderRadius: 8,
+            borderRadius: 999,
+            boxShadow: 'var(--shadow-soft)',
             fontSize: 15,
-            fontWeight: 500,
+            fontWeight: 600,
             cursor: 'pointer',
             opacity: busy ? 0.6 : 1,
           }}
@@ -125,7 +125,7 @@ export default function Login() {
       {error && (
         <div
           style={{
-            color: '#ff5252',
+            color: 'var(--danger-ink)',
             fontSize: 13,
             textAlign: 'center',
             maxWidth: 320,
@@ -141,7 +141,7 @@ export default function Login() {
           marginTop: 8,
           background: 'transparent',
           border: 'none',
-          color: 'rgba(255,255,255,0.4)',
+          color: 'var(--text-faint)',
           fontSize: 13,
           cursor: 'pointer',
         }}

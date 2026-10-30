@@ -93,7 +93,6 @@ export default function OnlineLobby({ onBack }) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#1e1e1e',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -113,7 +112,7 @@ export default function OnlineLobby({ onBack }) {
         <div style={{ fontSize: 40 }}>🌐</div>
         <div
           style={{
-            color: 'rgba(255,255,255,0.5)',
+            color: 'var(--text-dim)',
             fontSize: 14,
             textAlign: 'center',
             maxWidth: 300,
@@ -165,7 +164,7 @@ export default function OnlineLobby({ onBack }) {
       <>
         <div
           style={{
-            color: '#673ab7',
+            color: 'var(--lilac)',
             fontWeight: 'bold',
             fontSize: 20,
             letterSpacing: 3,
@@ -181,13 +180,13 @@ export default function OnlineLobby({ onBack }) {
               flexDirection: 'column',
               alignItems: 'center',
               gap: 8,
-              background: 'rgba(103,58,183,0.12)',
-              border: '1px solid rgba(103,58,183,0.3)',
-              borderRadius: 12,
+              background: 'rgba(var(--primary-rgb),0.12)',
+              border: '1px solid rgba(var(--primary-rgb),0.3)',
+              borderRadius: 'var(--radius-md)',
               padding: 18,
             }}
           >
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+            <div style={{ color: 'var(--text-dim)', fontSize: 12 }}>
               Beitritts-Code
             </div>
             {qrSrc && (
@@ -196,12 +195,12 @@ export default function OnlineLobby({ onBack }) {
                 alt="Beitritts-QR"
                 width={180}
                 height={180}
-                style={{ borderRadius: 8, background: 'white', padding: 6 }}
+                style={{ borderRadius: 'var(--radius-sm)', background: 'white', padding: 6 }}
               />
             )}
             <div
               style={{
-                color: '#b39ddb',
+                color: 'var(--lilac)',
                 fontSize: 28,
                 fontWeight: 'bold',
                 letterSpacing: 4,
@@ -215,7 +214,7 @@ export default function OnlineLobby({ onBack }) {
         <div style={{ width: '100%', maxWidth: 320 }}>
           <div
             style={{
-              color: 'rgba(255,255,255,0.4)',
+              color: 'var(--text-faint)',
               fontSize: 12,
               letterSpacing: 1,
               marginBottom: 6,
@@ -244,12 +243,12 @@ export default function OnlineLobby({ onBack }) {
             {players.length < 2 ? 'Warte auf Mitspieler…' : 'SPIEL STARTEN →'}
           </button>
         ) : (
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+          <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>
             Warte auf den Host…
           </div>
         )}
 
-        {error && <div style={{ color: '#ff5252', fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ color: 'var(--danger-ink)', fontSize: 13 }}>{error}</div>}
         <button className="btn-outline" onClick={reset}>
           Verlassen
         </button>
@@ -263,7 +262,7 @@ export default function OnlineLobby({ onBack }) {
       <div style={{ fontSize: 40 }}>🌐</div>
       <div
         style={{
-          color: '#673ab7',
+          color: 'var(--lilac)',
           fontWeight: 'bold',
           fontSize: 22,
           letterSpacing: 3,
@@ -273,7 +272,7 @@ export default function OnlineLobby({ onBack }) {
       </div>
       <div
         style={{
-          color: 'rgba(255,255,255,0.5)',
+          color: 'var(--text-dim)',
           fontSize: 13,
           textAlign: 'center',
           maxWidth: 320,
@@ -291,7 +290,7 @@ export default function OnlineLobby({ onBack }) {
         Neues Spiel erstellen
       </button>
 
-      <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>
+      <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
         oder einem Spiel beitreten
       </div>
 
@@ -322,11 +321,11 @@ export default function OnlineLobby({ onBack }) {
       </div>
 
       {busy && (
-        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+        <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
           <Spinner row label={busyLabel} />
         </div>
       )}
-      {error && <div style={{ color: '#ff5252', fontSize: 13 }}>{error}</div>}
+      {error && <div style={{ color: 'var(--danger-ink)', fontSize: 13 }}>{error}</div>}
       <button className="btn-outline" onClick={onBack}>
         ← Zurück
       </button>

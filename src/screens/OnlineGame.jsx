@@ -231,15 +231,14 @@ export default function OnlineGame({ gameId, onExit }) {
         style={{
           position: 'fixed',
           inset: 0,
-          background: '#1e1e1e',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'rgba(255,255,255,0.4)',
+          color: 'var(--text-faint)',
         }}
       >
         {error ? (
-          <span style={{ color: '#ff5252', fontSize: 13 }}>{error}</span>
+          <span style={{ color: 'var(--danger-ink)', fontSize: 13 }}>{error}</span>
         ) : (
           <Spinner label="Lade Spiel…" />
         )}
@@ -264,7 +263,6 @@ export default function OnlineGame({ gameId, onExit }) {
         style={{
           position: 'fixed',
           inset: 0,
-          background: '#1e1e1e',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -276,7 +274,7 @@ export default function OnlineGame({ gameId, onExit }) {
         <div style={{ fontSize: 48 }}>🏆</div>
         <div
           style={{
-            color: '#673ab7',
+            color: 'var(--lilac)',
             fontWeight: 'bold',
             fontSize: 22,
             letterSpacing: 3,
@@ -291,12 +289,12 @@ export default function OnlineGame({ gameId, onExit }) {
               width: '100%',
               maxWidth: 340,
               background:
-                i === 0 ? 'rgba(103,58,183,0.3)' : 'rgba(255,255,255,0.05)',
+                i === 0 ? 'rgba(var(--primary-rgb),0.3)' : 'var(--surface)',
               border:
                 i === 0
-                  ? '2px solid #673ab7'
-                  : '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 12,
+                  ? '2px solid var(--lilac)'
+                  : '1px solid var(--glass-border)',
+              borderRadius: "var(--radius-md)",
               padding: '14px 18px',
               display: 'flex',
               flexDirection: 'column',
@@ -315,7 +313,7 @@ export default function OnlineGame({ gameId, onExit }) {
                 {r.name}
               </div>
               <div
-                style={{ color: '#673ab7', fontWeight: 'bold', fontSize: 18 }}
+                style={{ color: 'var(--lilac)', fontWeight: 'bold', fontSize: 18 }}
               >
                 {r.total}
               </div>
@@ -359,7 +357,7 @@ export default function OnlineGame({ gameId, onExit }) {
           style={{
             background: 'none',
             border: 'none',
-            color: 'rgba(255,255,255,0.75)',
+            color: 'var(--text-soft)',
             fontSize: 17,
             cursor: 'pointer',
             width: 40,
@@ -379,8 +377,8 @@ export default function OnlineGame({ gameId, onExit }) {
             fontWeight: 'bold',
             background: isMyTurn
               ? 'rgba(105,255,71,0.15)'
-              : 'rgba(103,58,183,0.18)',
-            color: isMyTurn ? '#69ff47' : '#b39ddb',
+              : 'rgba(var(--primary-rgb),0.18)',
+            color: isMyTurn ? 'var(--bonus-ok)' : 'var(--lilac)',
           }}
         >
           {submitting ? (
@@ -456,7 +454,7 @@ export default function OnlineGame({ gameId, onExit }) {
           </>
         ) : (
           <>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+            <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
               {isHost
                 ? complete
                   ? 'Alle fertig — auswerten!'
@@ -489,7 +487,7 @@ export default function OnlineGame({ gameId, onExit }) {
             left: 0,
             right: 0,
             textAlign: 'center',
-            color: '#ff5252',
+            color: 'var(--danger-ink)',
             fontSize: 13,
           }}
         >

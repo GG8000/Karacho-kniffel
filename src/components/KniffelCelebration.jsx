@@ -6,7 +6,7 @@ const DURATION = 2600 // gesamte Feier inkl. Ausblenden
 const FADE = 400
 
 const GOLD = '#ffc400'
-const PURPLE = '#b388ff'
+const PURPLE = 'var(--lilac)'
 const WHITE = '#ffffff'
 const ORANGE = '#ff6d00'
 

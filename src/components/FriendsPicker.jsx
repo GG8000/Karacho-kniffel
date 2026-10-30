@@ -35,11 +35,11 @@ export default function FriendsPicker({ onPick, onClose, takenIds = [] }) {
         <div className="dialog-title">Freund auswählen</div>
 
         {friends === null ? (
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+          <div style={{ color: 'var(--text-dim)', fontSize: 14 }}>
             <Spinner row label="Lade Freunde…" size={16} />
           </div>
         ) : available.length === 0 ? (
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+          <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>
             Keine (weiteren) Freunde in deiner Liste. Scanne im Spiel einen
             QR-Code oder lege Freunde unter 👤 Konto an.
           </div>
@@ -64,9 +64,9 @@ export default function FriendsPicker({ onPick, onClose, takenIds = [] }) {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  background: 'rgba(103,58,183,0.15)',
-                  border: '1px solid rgba(103,58,183,0.4)',
-                  borderRadius: 10,
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: 'var(--radius-sm)',
                   padding: '12px 14px',
                   color: 'white',
                   cursor: 'pointer',
@@ -74,7 +74,7 @@ export default function FriendsPicker({ onPick, onClose, takenIds = [] }) {
                 }}
               >
                 <span style={{ fontWeight: 'bold' }}>{f.display_name}</span>
-                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>
                   {f.handle}
                 </span>
               </button>
@@ -82,7 +82,7 @@ export default function FriendsPicker({ onPick, onClose, takenIds = [] }) {
           </div>
         )}
 
-        {error && <div style={{ color: '#ff5252', fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ color: 'var(--danger-ink)', fontSize: 13 }}>{error}</div>}
 
         <div className="dialog-actions">
           <button className="btn-outline" onClick={onClose}>

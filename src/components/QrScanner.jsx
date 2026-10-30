@@ -51,14 +51,14 @@ export default function QrScanner({ onScan, onClose }) {
       <div className="dialog" style={{ gap: 14 }}>
         <div className="dialog-title">Freund-Code scannen</div>
         {error ? (
-          <div style={{ color: '#ff5252', fontSize: 13 }}>
+          <div style={{ color: 'var(--danger-ink)', fontSize: 13 }}>
             {error} Erlaube der App den Kamerazugriff oder tippe den Code
             manuell ein.
           </div>
         ) : (
           <div
             style={{
-              color: 'rgba(255,255,255,0.5)',
+              color: 'var(--text-dim)',
               fontSize: 13,
             }}
           >
@@ -69,7 +69,7 @@ export default function QrScanner({ onScan, onClose }) {
           id={containerId}
           style={{
             width: '100%',
-            borderRadius: 10,
+            borderRadius: 'var(--radius-sm)',
             overflow: 'hidden',
             background: '#000',
           }}

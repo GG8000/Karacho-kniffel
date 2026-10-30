@@ -75,18 +75,7 @@ function BlockColumn({
         borderLeft: "1px solid var(--sheet-rule)",
       }}
     >
-      <div
-        style={{
-          height: 36,
-          background: "var(--sheet-head)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 11,
-          fontWeight: "bold",
-          color: "var(--sheet-head-ink)",
-        }}
-      >
+      <div className="sheet-head" style={{ height: 36, fontSize: 11 }}>
         {label}
       </div>
       {categories.map((cat, i) => {
@@ -118,12 +107,12 @@ function BlockColumn({
               // zwei Farben. Koralle warnt, Lila weist.
               color: isNext ? "var(--sheet-accent)" : "var(--sheet-ink)",
               background: isArmed
-                ? "rgba(255,138,101,0.16)"
+                ? "rgba(255,138,101,0.22)"
                 : isNext
-                  ? "rgba(179,136,255,0.14)"
+                  ? "rgba(var(--primary-rgb),0.14)"
                   : isAuto
                     ? "var(--sheet-sum)"
-                    : "transparent",
+                    : "var(--cell-fill)",
               borderBottom: "1px solid var(--sheet-rule)",
               cursor: isClickable ? "pointer" : "default",
               fontWeight: isAuto ? "bold" : "normal",
@@ -362,7 +351,6 @@ export default function KniffelExtrem({ onExit }) {
         style={{
           position: "fixed",
           inset: 0,
-          background: "#1e1e1e",
           display: "flex",
           flexDirection: "column",
           padding: 24,
@@ -387,7 +375,7 @@ export default function KniffelExtrem({ onExit }) {
           </button>
           <div
             style={{
-              color: "#673ab7",
+              color: "var(--lilac)",
               fontWeight: "bold",
               fontSize: 20,
               letterSpacing: 3,
@@ -396,7 +384,7 @@ export default function KniffelExtrem({ onExit }) {
             🔥 KNIFFEL EXTREM
           </div>
         </div>
-        <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
+        <div style={{ color: "var(--text-dim)", fontSize: 13 }}>
           Drei Blöcke gleichzeitig — von oben, von unten, normal.
         </div>
 
@@ -407,8 +395,8 @@ export default function KniffelExtrem({ onExit }) {
               display: "flex",
               justifyContent: "space-between",
               color: "white",
-              background: "rgba(103,58,183,0.15)",
-              borderRadius: 10,
+              background: "var(--card-bg)",
+              borderRadius: 'var(--radius-sm)',
               padding: "10px 14px",
             }}
           >
@@ -416,7 +404,7 @@ export default function KniffelExtrem({ onExit }) {
             {identities[i] && (
               <span
                 title="Verknüpfter Account — bekommt das Spiel auf die eigene Statistik"
-                style={{ color: "#673ab7" }}
+                style={{ color: "var(--lilac)" }}
               >
                 ☁
               </span>
@@ -487,7 +475,6 @@ export default function KniffelExtrem({ onExit }) {
         style={{
           position: "fixed",
           inset: 0,
-          background: "#1e1e1e",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -499,7 +486,7 @@ export default function KniffelExtrem({ onExit }) {
         <div style={{ fontSize: 48 }}>🔥</div>
         <div
           style={{
-            color: "#673ab7",
+            color: "var(--lilac)",
             fontWeight: "bold",
             fontSize: 22,
             letterSpacing: 3,
@@ -515,12 +502,12 @@ export default function KniffelExtrem({ onExit }) {
               width: "100%",
               maxWidth: 340,
               background:
-                i === 0 ? "rgba(103,58,183,0.3)" : "rgba(255,255,255,0.05)",
+                i === 0 ? "rgba(var(--primary-rgb),0.3)" : "var(--surface)",
               border:
                 i === 0
-                  ? "2px solid #673ab7"
-                  : "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12,
+                  ? "2px solid var(--lilac)"
+                  : "1px solid var(--glass-border)",
+              borderRadius: "var(--radius-md)",
               padding: "14px 18px",
               display: "flex",
               flexDirection: "column",
@@ -539,7 +526,7 @@ export default function KniffelExtrem({ onExit }) {
                 {r.name}
               </div>
               <div
-                style={{ color: "#673ab7", fontWeight: "bold", fontSize: 18 }}
+                style={{ color: "var(--lilac)", fontWeight: "bold", fontSize: 18 }}
               >
                 {r.total}
               </div>
@@ -552,7 +539,7 @@ export default function KniffelExtrem({ onExit }) {
 
         <div
           style={{
-            color: "rgba(255,255,255,0.35)",
+            color: "var(--text-faint)",
             fontSize: 12,
             marginTop: 4,
           }}
@@ -617,7 +604,7 @@ export default function KniffelExtrem({ onExit }) {
           style={{
             background: "none",
             border: "none",
-            color: "rgba(255,255,255,0.75)",
+            color: "var(--text-soft)",
             fontSize: 17,
             cursor: "pointer",
             width: 40,
@@ -673,17 +660,8 @@ export default function KniffelExtrem({ onExit }) {
                 style={{ display: "flex", flexDirection: "column" }}
               >
                 <div
-                  style={{
-                    display: "flex",
-                    height: 36,
-                    background: "var(--sheet-head)",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: "bold",
-                    color: "var(--sheet-head-ink)",
-                    fontSize: 12,
-                    borderLeft: "1px solid var(--sheet-rule)",
-                  }}
+                  className="sheet-head"
+                  style={{ height: 36, fontSize: 12 }}
                 >
                   {name} · {getTotal(pIdx)}
                 </div>

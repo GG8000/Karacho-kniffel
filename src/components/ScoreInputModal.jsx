@@ -185,23 +185,10 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
 
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.6)',
-        display: 'flex', alignItems: 'flex-end',
-        zIndex: 1000,
-      }}
+      className="sheet-overlay"
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div style={{
-        background: '#1e1e1e',
-        width: '100%',
-        padding: '30px 24px 40px',
-        borderRadius: '16px 16px 0 0',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 16,
-      }}>
+      <div className="sheet">
 
         {isUpper ? (
           <>
@@ -211,7 +198,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
                 {playerName ? `${playerName}: ` : ''}{FACE_NAME[upperFace]}
               </div>
             </div>
-            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>
+            <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 14 }}>
               Wie viele Würfel zeigen die {upperFace}?
             </div>
 
@@ -243,7 +230,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
 
             {hasKeyboard && <div className="key-hint">{keyHint}</div>}
 
-            <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />
+            <hr className="sheet-rule" />
             <button className="btn-delete" onClick={onDelete} style={{ alignSelf: 'flex-start' }}>
               🗑 Löschen
             </button>
@@ -271,7 +258,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
                   justifyContent: 'center',
                   gap: 10,
                   padding: '10px 12px',
-                  borderRadius: 10,
+                  borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
                   border: claimed
                     ? '1px solid rgba(255,196,0,0.7)'
@@ -308,7 +295,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
             )}
 
             {defaultValue != null && (
-              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+              <div style={{ textAlign: 'center', color: 'var(--text-faint)', fontSize: 12 }}>
                 ≈ dein typischer Wert
               </div>
             )}
@@ -337,7 +324,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
             <div
               style={{
                 textAlign: 'center',
-                color: 'rgba(255,255,255,0.55)',
+                color: 'var(--text-dim)',
                 fontSize: 14,
               }}
             >
@@ -378,7 +365,7 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
 
             {hasKeyboard && <div className="key-hint">{keyHint}</div>}
 
-            <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />
+            <hr className="sheet-rule" />
             <button className="btn-delete" onClick={onDelete} style={{ alignSelf: 'flex-start' }}>
               🗑 Löschen
             </button>

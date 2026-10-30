@@ -268,11 +268,10 @@ export default function Guide() {
         <Section title="SO TRÄGST DU EIN">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ color: MUTED, fontSize: 13, lineHeight: 1.55 }}>
-              <B>Oberer Teil (1 bis 6):</B> immer wieder auf dieselbe Zelle
-              tippen. Jeder Tap zählt einen Würfel weiter — der erste Tap heißt
-              „gestrichen", der sechste „fünf gleiche", der siebte macht die
-              Zelle wieder leer. Du tippst dich also einfach bis zu deiner
-              Würfelzahl durch.
+              <B>Oberer Teil (1 bis 6):</B> tippe die Zelle an und wähle im
+              Fenster, <B>wie viele Würfel</B> die Augenzahl zeigen (1 bis 5).
+              Fünf gleiche sind ein Kniffel, „Streichen" trägt eine gestrichene
+              Zeile ein. Ein langer Druck auf die Zelle streicht sofort.
             </div>
             <div style={{ color: MUTED, fontSize: 13, lineHeight: 1.55 }}>
               <B>{CATEGORIES[9]}, {CATEGORIES[10]}, {CATEGORIES[11]}:</B> fester
@@ -295,8 +294,8 @@ export default function Guide() {
 
         <Section title="WENN DU DICH VERTIPPST">
           <div style={{ color: MUTED, fontSize: 13, lineHeight: 1.55 }}>
-            Eine <B>leere</B> Zelle reagiert sofort. Eine schon <B>gefüllte</B>{' '}
-            wird vom ersten Tap nur markiert — sie bekommt einen{' '}
+            Bei FH, KL STR und GR STR reagiert eine <B>leere</B> Zelle sofort. Eine
+            schon <B>gefüllte</B> wird vom ersten Tap nur markiert — sie bekommt einen{' '}
             <span style={{ color: ARMED, fontWeight: 'bold' }}>
               orangen Rahmen
             </span>

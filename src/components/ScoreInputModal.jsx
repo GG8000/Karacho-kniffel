@@ -1,15 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { celebrateKniffel } from '../lib/celebrate'
 import { announceStrike } from '../lib/strike'
-import { WHEEL_MIN, WHEEL_MAX, kniffelFaceFor } from '../logic/kniffel'
+import {
+  WHEEL_MIN,
+  WHEEL_MAX,
+  UPPER_INDICES,
+  kniffelFaceFor,
+  upperValue,
+  upperCount,
+} from '../logic/kniffel'
 import PickerWheel from './PickerWheel'
-import Die from './Die'
+import Die, { FACE_NAME } from './Die'
 
-// Sheet für die beiden Kategorien, die einen echten Wert brauchen:
-// 3er/4er/CHNC über das Auswahlrad und die Kniffel-Zeile über die Augenzahl.
-// Der obere Teil und FH/KL STR/GR STR werden direkt in der Zelle
-// durchgeklickt (siehe logic/kniffel.js nextCellState) und landen hier nicht
-// mehr.
+// Sheet für die Kategorien, die einen echten Wert brauchen: der obere Teil über
+// die Würfelanzahl (0-5), 3er/4er/CHNC über das Auswahlrad und die Kniffel-Zeile
+// über die Augenzahl. Nur FH/KL STR/GR STR werden direkt in der Zelle
+// durchgeklickt (siehe logic/kniffel.js nextCellState) und landen hier nicht.
 
 const KNIFFEL_POINTS = 50
 
@@ -36,10 +42,16 @@ function useHasKeyboard() {
   return fine
 }
 
-export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, defaultValue, onClose, onSave, onDelete }) {
+export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, defaultValue, entry, onClose, onSave, onDelete }) {
   const catName = categories[cIdx]
+  const isUpper = UPPER_INDICES.includes(cIdx)
   const isKniffelRow = catName === 'KNFFL'
-  const isWheel = !isKniffelRow
+  const isWheel = !isUpper && !isKniffelRow
+
+  // Oben: die Augenzahl der Zeile und die Anzahl, die schon eingetragen ist
+  // (null bei leerer Zelle) — sie wird im Sheet hervorgehoben.
+  const upperFace = isUpper ? cIdx + 1 : null
+  const currentCount = isUpper && entry ? upperCount(cIdx, entry.value) : null
 
   // Startwert des Rads: typischer Wert dieses Spielers (falls vorhanden),
   // sonst wie bisher 15. Darf beim Tippen im Zahlenfeld kurz '' sein —
@@ -90,6 +102,18 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
     onSave(0, false)
   }
 
+  // Obere Zeile: Anzahl der Würfel mit dieser Augenzahl. Fünf davon sind ein
+  // Kniffel. Feier und Streichung knallen sofort, weil die Anzahl hier bewusst
+  // gewählt ist und nicht beim Durchklicken nur vorbeikommt.
+  function pickCount(count) {
+    if (count === 0) {
+      announceStrike({ cIdx, category: catName, playerName })
+      onSave(upperValue(cIdx, 0), false, null)
+      return
+    }
+    save(upperValue(cIdx, count), count === 5, count === 5 ? upperFace : null)
+  }
+
   // Zahlenfeld beim Öffnen scharf stellen und den Wert markieren, damit die
   // erste getippte Ziffer ihn ersetzt statt sich anzuhängen.
   useEffect(() => {
@@ -105,6 +129,14 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
       if (e.key === 'Escape') {
         e.preventDefault()
         onClose()
+        return
+      }
+
+      if (isUpper) {
+        if (/^[0-5]$/.test(e.key)) {
+          e.preventDefault()
+          pickCount(Number(e.key))
+        }
         return
       }
 
@@ -132,9 +164,14 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
 
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [pIdx, cIdx, isWheel, sumValue, claimed, kniffelFace])
+  }, [pIdx, cIdx, isUpper, isWheel, sumValue, claimed, kniffelFace])
 
-  const keyHint = isWheel ? (
+  const keyHint = isUpper ? (
+    <>
+      <kbd>1</kbd>–<kbd>5</kbd> = Anzahl · <kbd>0</kbd> = Streichen ·{' '}
+      <kbd>Esc</kbd> schließt
+    </>
+  ) : isWheel ? (
     <>
       <kbd>↑</kbd><kbd>↓</kbd> wählt · <kbd>Enter</kbd> bestätigt ·{' '}
       <kbd>Esc</kbd> schließt
@@ -166,7 +203,52 @@ export default function ScoreInputModal({ pIdx, cIdx, categories, playerName, de
         gap: 16,
       }}>
 
-        {isWheel ? (
+        {isUpper ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <Die face={upperFace} size={34} />
+              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+                {playerName ? `${playerName}: ` : ''}{FACE_NAME[upperFace]}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>
+              Wie viele Würfel zeigen die {upperFace}?
+            </div>
+
+            <div className="count-grid">
+              {[1, 2, 3, 4, 5].map((count) => (
+                <button
+                  key={count}
+                  className={
+                    'count-btn' +
+                    (count === currentCount ? ' is-current' : '') +
+                    (count === 5 ? ' is-kniffel' : '')
+                  }
+                  aria-label={`${count} × ${upperFace}${count === 5 ? ' (Kniffel)' : ''}`}
+                  onClick={() => pickCount(count)}
+                >
+                  <span className="count-num">{count}</span>
+                  <span className="count-sub">{count === 5 ? 'Kniffel' : `= ${count * upperFace}`}</span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              className="btn-grid-item"
+              onClick={() => pickCount(0)}
+              style={{ alignSelf: 'center' }}
+            >
+              ❌ Streichen
+            </button>
+
+            {hasKeyboard && <div className="key-hint">{keyHint}</div>}
+
+            <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />
+            <button className="btn-delete" onClick={onDelete} style={{ alignSelf: 'flex-start' }}>
+              🗑 Löschen
+            </button>
+          </>
+        ) : isWheel ? (
           <>
             <div style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>
               {catName}: {sumValue} Punkte

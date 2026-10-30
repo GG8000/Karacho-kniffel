@@ -4,11 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // mehr, er schaltet sie nur "scharf". Erst der zweite Tap editiert.
 //
 // Der Timer ist der Kern der Sache. Nach dem ersten Tap auf eine leere Zelle ist
-// diese gefüllt UND scharf — die Taps 2 bis 6 des oberen Teils (0→1→2→3→4→5
-// Würfel) laufen deshalb ohne Unterbrechung durch. Erst wer ~3 s nichts tut oder
+// diese gefüllt UND scharf — die Taps auf FH/KL STR/GR STR (eingetragen→
+// gestrichen→leer) laufen deshalb ohne Unterbrechung durch. Erst wer ~3 s nichts tut oder
 // woanders hintippt, muss wieder zweimal tippen.
 //
-// Die Zellen mit Sheet (3er/4er/CHNC, KNFFL) brauchen das nicht: Das Sheet ändert
+// Die Zellen mit Sheet (oberer Teil, 3er/4er/CHNC, KNFFL) brauchen das nicht: Das Sheet ändert
 // von sich aus noch nichts.
 const TIMEOUT_MS = 3000
 

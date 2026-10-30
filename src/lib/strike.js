@@ -22,9 +22,9 @@ export function announceStrike(detail) {
 // Kündigt eine Streichung an, die der nächste Tap auf dieselbe Zelle noch
 // zurücknehmen kann (siehe pendingCell.js).
 //
-// Im oberen Teil ist die Streichung zugleich der ERSTE Tap beim Durchklicken,
-// dort wird gewartet. Unten ist sie eine bewusste Eingabe und darf sofort
-// knallen — über denselben Timer, damit ein direkt folgender Tap sie auch dann
+// Oben kommt die Streichung per langem Druck und wird abgewartet. Das Sheet
+// (Streichen-Knopf) ist eine bewusste Eingabe und knallt sofort — wie auch
+// unten — über denselben Timer, damit ein direkt folgender Tap sie auch dann
 // noch erwischt.
 export function armStrike(key, detail) {
   const delay = UPPER_INDICES.includes(detail.cIdx) ? SETTLE_MS : 0

@@ -13,7 +13,6 @@ import {
   isStruck,
   nextCellState,
 } from "../logic/kniffel";
-import { armKniffel } from "../lib/celebrate";
 import { armStrike } from "../lib/strike";
 import { cancelCellEvent } from "../lib/pendingCell";
 import { showToast } from "../lib/toast";
@@ -247,12 +246,10 @@ export default function KniffelExtrem({ onExit }) {
       showToast({ text: "Nochmal tippen zum Ändern" });
       return;
     }
-    // Außerhalb des Updaters, sonst feuert die Feier im StrictMode doppelt.
-    // Oben mit Bedenkzeit, siehe lib/pendingCell.js.
+    // Außerhalb des Updaters, sonst feuert die Streich-Animation im StrictMode
+    // doppelt.
     const cellKey = `${pIdx}:${block}:${cIdx}`;
-    if (step.kind === "set" && step.entry.isKniffel) {
-      armKniffel(cellKey, { kind: "upper", face: step.entry.face });
-    } else if (step.kind === "set" && isStruck(cIdx, step.entry)) {
+    if (step.kind === "set" && isStruck(cIdx, step.entry)) {
       armStrike(cellKey, {
         cIdx,
         category: CATS_NORMAL[cIdx],
@@ -748,6 +745,7 @@ export default function KniffelExtrem({ onExit }) {
           cIdx={modal.cIdx}
           categories={CATS_NORMAL}
           playerName={players[modal.pIdx]}
+          entry={scores[modal.pIdx][modal.block][modal.cIdx]}
           onClose={() => setModal(null)}
           onSave={(val, isKniffel) =>
             updateScore(modal.pIdx, modal.block, modal.cIdx, val, isKniffel)

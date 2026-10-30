@@ -597,6 +597,56 @@ input, textarea, [contenteditable] {
   color: rgba(255, 255, 255, 0.75);
 }
 
+/* --- Würfelanzahl oben (components/ScoreInputModal.jsx) ------------------- */
+.count-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.count-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 72px;
+  border-radius: 12px;
+  border: 1px solid var(--sheet-rule);
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  cursor: pointer;
+}
+
+.count-btn:active {
+  background: #673ab7;
+}
+
+.count-num {
+  font-size: 28px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.count-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Der Wert, der schon in der Zelle steht. */
+.count-btn.is-current {
+  border-color: var(--sheet-accent);
+  background: rgba(179, 136, 255, 0.18);
+}
+
+.count-btn.is-kniffel {
+  border-color: rgba(255, 196, 0, 0.55);
+}
+
+.count-btn.is-kniffel .count-sub {
+  color: var(--kniffel-gold);
+}
+
 /* --- Auswahlrad (components/PickerWheel.jsx) ------------------------------ */
 .wheel {
   position: relative;

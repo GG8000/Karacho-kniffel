@@ -120,8 +120,8 @@ export default function OnlineGame({ gameId, onExit }) {
     setModal(null)
   }
 
-  // Tap auf eine Zelle: oberer Teil und feste Punktzahlen klicken durch, der
-  // Rest öffnet das Sheet. Alles bleibt lokal, bis bestätigt wird.
+  // Tap auf eine Zelle: feste Punktzahlen klicken durch, der
+  // Rest (auch der obere Teil) öffnet das Sheet. Alles bleibt lokal, bis bestätigt wird.
   function handleTap(cIdx) {
     if (!isMyTurn) return
     if (scoresByPlayer[meId]?.[cIdx]) return // schon abgeschickt
@@ -503,6 +503,7 @@ export default function OnlineGame({ gameId, onExit }) {
           cIdx={modal.cIdx}
           categories={CATEGORIES}
           playerName={players.find((p) => p.profileId === meId)?.name}
+          entry={pending?.cIdx === modal.cIdx ? pending.entry : undefined}
           onClose={() => setModal(null)}
           onSave={handleSave}
           onDelete={() => setModal(null)}

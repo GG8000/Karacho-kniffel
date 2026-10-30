@@ -8,7 +8,6 @@ import { useAuth } from "../auth/AuthContext";
 import { finalizeIdentities } from "../auth/identity";
 import { calculateUpperBalance, calculateTotal } from "../logic/calculator";
 import { CATEGORIES, isStruck, nextCellState } from "../logic/kniffel";
-import { armKniffel } from "../lib/celebrate";
 import { armStrike } from "../lib/strike";
 import { cancelCellEvent } from "../lib/pendingCell";
 import { showToast } from "../lib/toast";
@@ -131,12 +130,10 @@ export default function LuckyScoreGame({ onExit }) {
       showToast({ text: "Nochmal tippen zum Ändern" });
       return;
     }
-    // Außerhalb des Updaters, sonst feuert die Feier im StrictMode doppelt.
-    // Oben mit Bedenkzeit, siehe lib/pendingCell.js.
+    // Außerhalb des Updaters, sonst feuert die Streich-Animation im StrictMode
+    // doppelt.
     const cellKey = `${pIdx}:${cIdx}`;
-    if (step.kind === "set" && step.entry.isKniffel) {
-      armKniffel(cellKey, { kind: "upper", face: step.entry.face });
-    } else if (step.kind === "set" && isStruck(cIdx, step.entry)) {
+    if (step.kind === "set" && isStruck(cIdx, step.entry)) {
       armStrike(cellKey, {
         cIdx,
         category: CATEGORIES[cIdx],
@@ -513,6 +510,7 @@ export default function LuckyScoreGame({ onExit }) {
           cIdx={modal.cIdx}
           categories={CATEGORIES}
           playerName={players[modal.pIdx]}
+          entry={scores[modal.pIdx]?.[modal.cIdx]}
           onClose={() => setModal(null)}
           onSave={(val, isKniffel) =>
             updateScore(modal.pIdx, modal.cIdx, val, isKniffel)

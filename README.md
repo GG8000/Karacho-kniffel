@@ -18,10 +18,12 @@ nicht) und `GEO_DEV_CITY=<Stadt>`, weil die Geo-Header nur auf Vercel ankommen.
 # Improvements
 - [x] **Auswahlrad statt Slider** — `components/PickerWheel.jsx`, iOS-artiges
   Rad über CSS scroll-snap. Für 3er/4er/Chance (5–30).
-- [x] **Eintragen per Zell-Klick** — kein Modal mehr für den oberen Teil und
-  FH/KL STR/GR STR. Oben zählt jeder Tap eine Würfelanzahl weiter: 1. Tap =
-  0 Würfel (gestrichen), 6. Tap = 5 Würfel (Kniffel), 7. Tap = wieder leer.
-  Zentral in `logic/kniffel.js` → `nextCellState()`.
+- [x] **Eintragen per Zell-Klick** — FH/KL STR/GR STR werden durchgeklickt
+  (leer → eingetragen → gestrichen → leer). Der obere Teil öffnet dagegen
+  wieder ein Sheet, in dem die Würfelanzahl (0–5) gewählt wird: 0 = gestrichen,
+  5 = Kniffel; ein langer Druck streicht weiterhin direkt. (Das Durchklicken
+  0→5 war bei den Spielern unbeliebt.) Zentral in `logic/kniffel.js` →
+  `nextCellState()`, das Sheet in `components/ScoreInputModal.jsx`.
 - [x] **„-" bei drei gleichen Zahlen** — der obere Teil speichert eine Balance
   relativ zu drei Würfeln, drei gleiche sind also genau `0`. Leere Zellen
   zeigen jetzt nichts mehr, damit `-` eindeutig bleibt.
@@ -150,3 +152,10 @@ jetzt die nächste freie *und* die zuletzt gefüllte Zelle je Block.
 
 Früher erledigt: 🔁 Nochmal in der Auswertung, Spieler-Vorschläge aus der
 Historie (`RecentPlayersPicker`), Kniffel-Animation, Tastatureingabe am Laptop.
+
+# Vor dem Push
+
+`npm run verify` baut den **committeten** Stand (`git archive HEAD` in einem
+leeren Ordner). `npm run build` baut dagegen den Ordner auf der Platte — eine nie
+committete Datei fällt dort nicht auf und lässt Vercel scheitern (so geschehen
+mit `src/screens/Strategy.jsx`).

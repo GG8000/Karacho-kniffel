@@ -1,10 +1,11 @@
 // Ereignisse, die an einer Zelle hängen und erst gelten sollen, wenn sie einen
 // Moment lang Bestand hatten.
 //
-// Der obere Teil wird durchgeklickt (0→1→2→3→4→5 Würfel, siehe nextCellState).
-// Der erste Tap heißt "gestrichen", der sechste "Kniffel" — beides Zustände,
-// die man beim Weitertippen nur durchläuft. Eine Animation, die sofort losgeht,
-// feiert oder betrauert deshalb regelmäßig etwas, das gleich wieder weg ist.
+// Die festen Felder (FH, KL STR, GR STR) werden durchgeklickt (leer→
+// eingetragen→gestrichen, siehe nextCellState), und ein langer Druck streicht
+// ein oberes Feld direkt. "Gestrichen" ist dort ein Zustand, den man beim
+// Weitertippen nur durchläuft. Eine Animation, die sofort losgeht, betrauert
+// deshalb regelmäßig etwas, das gleich wieder weg ist.
 //
 // Ein einziger Timer JE ZELLE, für alle Ereignisarten zusammen: eine Zelle kann
 // nicht gleichzeitig gestrichen und Kniffel sein, das Anmelden des einen darf

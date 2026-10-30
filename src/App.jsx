@@ -23,7 +23,6 @@ import {
   nextCellState,
   strikeStep,
 } from "./logic/kniffel";
-import { armKniffel } from "./lib/celebrate";
 import { armStrike } from "./lib/strike";
 import { cancelCellEvent } from "./lib/pendingCell";
 import { showToast } from "./lib/toast";
@@ -377,15 +376,22 @@ export default function App() {
     setScores((prev) => {
       const playerScores = {
         ...prev[pIdx],
-        [cIdx]: { value, timestamp: Date.now(), isKniffel, face },
+        // Der Zeitpunkt gehört zur ersten Eintragung (turn in buildGamePayload),
+        // auch wenn der Wert später im Sheet geändert wird.
+        [cIdx]: {
+          value,
+          timestamp: prev[pIdx]?.[cIdx]?.timestamp ?? Date.now(),
+          isKniffel,
+          face,
+        },
       };
       return { ...prev, [pIdx]: refreshTotals(playerScores) };
     });
     setModal(null);
   }
 
-  // Tap auf eine Zelle: oberer Teil und feste Punktzahlen klicken direkt durch,
-  // 3er/4er/CHNC und die Kniffel-Zeile öffnen das Sheet.
+  // Tap auf eine Zelle: die festen Punktzahlen klicken direkt durch, der obere
+  // Teil, 3er/4er/CHNC und die Kniffel-Zeile öffnen das Sheet.
   // Langer Druck: direkt streichen, ohne den Tap-Zyklus durchzugehen.
   function handleLongPress(pIdx, cIdx) {
     const prev = scores[pIdx]?.[cIdx];
@@ -404,8 +410,8 @@ export default function App() {
       return;
     }
     // Ein Tap auf eine schon gefuellte Zelle markiert sie nur; erst der zweite
-    // ändert wirklich. Beim Durchklicken bleibt dieselbe Zelle scharf, 0→1→2→3→
-    // 4→5 Würfel läuft also in einem Rutsch durch.
+    // ändert wirklich. Beim Durchklicken bleibt dieselbe Zelle scharf, leer→
+    // eingetragen→gestrichen läuft also in einem Rutsch durch.
     if (!skipArm && !requestEdit(`${pIdx}:${cIdx}`, !!prev)) {
       showToast({ text: "Nochmal tippen zum Ändern" });
       return;
@@ -413,14 +419,11 @@ export default function App() {
     // Beides bewusst VOR setScores und außerhalb des Updaters: React ruft den
     // Updater im StrictMode doppelt auf, die Animation liefe sonst zweimal.
     //
-    // Feier wie Streichung bekommen im oberen Teil Bedenkzeit — dort sind "fünf
-    // Würfel" und "gestrichen" nur Stationen beim Durchklicken 0→1→2→3→4→5
-    // (siehe lib/pendingCell.js). Ein Zellschlüssel, ein Timer: die Zelle kann
-    // nur eines von beidem sein.
+    // Die Streichung eines oberen Felds per langem Druck bekommt Bedenkzeit
+    // (siehe lib/pendingCell.js), damit "Rückgängig" oder ein Tap sie noch
+    // abfangen. Ein Zellschlüssel, ein Timer.
     const cellKey = `${pIdx}:${cIdx}`;
-    if (step.kind === "set" && step.entry.isKniffel) {
-      armKniffel(cellKey, { kind: "upper", face: step.entry.face });
-    } else if (step.kind === "set" && isStruck(cIdx, step.entry)) {
+    if (step.kind === "set" && isStruck(cIdx, step.entry)) {
       armStrike(cellKey, {
         cIdx,
         category: CATEGORIES[cIdx],
@@ -841,6 +844,7 @@ export default function App() {
           categories={CATEGORIES}
           playerName={players[modal.pIdx]}
           defaultValue={modalDefaultValue(modal.pIdx, modal.cIdx)}
+          entry={scores[modal.pIdx]?.[modal.cIdx]}
           onClose={() => setModal(null)}
           onSave={(val, isKniffel, face) =>
             updateScore(modal.pIdx, modal.cIdx, val, isKniffel, face)

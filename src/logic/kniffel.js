@@ -22,8 +22,8 @@ export const CATEGORIES = [
 
 export const PLAYABLE_INDICES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13]
 
-// Die vier Zellarten. Der obere Teil und die festen Punktzahlen werden direkt
-// in der Zelle durchgeklickt, die anderen beiden öffnen ein Sheet.
+// Die vier Zellarten. Die festen Punktzahlen werden direkt in der Zelle
+// durchgeklickt, der obere Teil und die anderen beiden öffnen ein Sheet.
 export const UPPER_INDICES = [0, 1, 2, 3, 4, 5]
 export const WHEEL_INDICES = [7, 8, 13] // 3er, 4er, CHNC — Auswahlrad
 export const FIXED_INDICES = [9, 10, 11] // FH, KL STR, GR STR
@@ -55,12 +55,11 @@ export function kniffelFaceFor(value) {
 // Was ein Tap auf eine Zelle auslöst:
 //   { kind: 'set', entry }  neuer Zellinhalt
 //   { kind: 'clear' }       Zelle leeren
-//   { kind: 'sheet' }       Rad bzw. Würfelauswahl öffnen
+//   { kind: 'sheet' }       Anzahl-, Rad- bzw. Würfelauswahl öffnen
 //   null                    nicht antippbar (SUMME / TOTAL)
 //
-// Oben zählt jeder Tap eine Würfelanzahl weiter: 1. Tap = 1 Würfel, 5. Tap =
-// 5 Würfel (Kniffel), 6. Tap = gestrichen, 7. Tap = wieder leer. Ein langer
-// Druck streicht direkt (siehe strikeStep).
+// Oben öffnet jeder Tap das Sheet, in dem die Würfelanzahl (0-5) gewählt wird.
+// Ein langer Druck streicht direkt (siehe strikeStep).
 export function nextCellState(cIdx, entry) {
   if (SUM_INDICES.includes(cIdx)) return null
 
@@ -68,22 +67,6 @@ export function nextCellState(cIdx, entry) {
   // turn 1..13 ab, den orderStats auswertet. Würde jeder Tap ihn neu setzen,
   // rutschte jede durchgeklickte Zelle ans Ende der Zugreihenfolge.
   const timestamp = entry?.timestamp ?? Date.now()
-
-  if (UPPER_INDICES.includes(cIdx)) {
-    // leer -> 1 -> 2 -> 3 -> 4 -> 5 -> gestrichen (0) -> leer.
-    const count = entry ? upperCount(cIdx, entry.value) : null
-    if (count === 0) return { kind: 'clear' }
-    const next = count === null ? 1 : count === 5 ? 0 : count + 1
-    return {
-      kind: 'set',
-      entry: {
-        value: upperValue(cIdx, next),
-        timestamp,
-        isKniffel: next === 5,
-        face: next === 5 ? cIdx + 1 : null,
-      },
-    }
-  }
 
   if (FIXED_INDICES.includes(cIdx)) {
     const points = FIXED_POINTS[cIdx]

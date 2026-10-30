@@ -43,6 +43,7 @@ import RatingDelta from "./components/RatingDelta";
 import { pathForState, screenForPath, isTransientPath } from "./lib/analytics";
 import { startSessionTracking } from "./lib/geoSession";
 import Spinner from "./components/Spinner";
+import LaunchSplash from "./components/LaunchSplash";
 import "./App.css";
 
 // Einmal gesehen reicht — danach nur noch über den "?"-Knopf im Spiel.
@@ -64,159 +65,6 @@ function refreshTotals(playerScores) {
     6: { value: calculateUpperBalance(playerScores), timestamp: now },
     14: { value: calculateTotal(playerScores), timestamp: now },
   };
-}
-
-function LoadingScreen({ onDone }) {
-  const fillRef = useRef(null)
-  const outerRef = useRef(null)
-  const midRef = useRef(null)
-  const innerRef = useRef(null)
-  const diceRef = useRef(null)
-  const groupRef = useRef(null)
-  const screenRef = useRef(null)
-  const trackRef = useRef(null)
-  const titleRef = useRef(null)
-
-  useEffect(() => {
-    const duration = 5000
-    const launchAt = 0.78
-    let start = null
-    let launched = false
-    let raf
-
-    function spawnEmber(hot) {
-      const el = document.createElement('div')
-      const ex = (Math.random() - 0.5) * 80
-      const ey = 20 + Math.random() * 70
-      Object.assign(el.style, {
-        position: 'absolute', width: '3px', height: '3px',
-        borderRadius: '50%', background: hot ? '#fff' : '#ff6600',
-        left: '50%', top: '55%', pointerEvents: 'none',
-        animation: 'emberFly 1.2s ease-out forwards',
-        '--ex': ex + 'px', '--ey': ey + 'px',
-      })
-      screenRef.current?.appendChild(el)
-      setTimeout(() => el.remove(), 1200)
-    }
-
-    function update(ts) {
-      if (!start) start = ts
-      const p = Math.min((ts - start) / duration, 1)
-
-      if (fillRef.current) fillRef.current.style.width = (p * 100) + '%'
-
-      if (p < launchAt) {
-        const fp = p / launchAt
-        if (outerRef.current) outerRef.current.style.height = (fp * 50) + 'px'
-        if (midRef.current) midRef.current.style.height = (fp * 36) + 'px'
-        if (innerRef.current) innerRef.current.style.height = (fp * 22) + 'px'
-        if (groupRef.current) {
-          const s = fp * 3
-          groupRef.current.style.transform = `rotate(${(Math.random() - 0.5) * s}deg) translateX(${(Math.random() - 0.5) * s}px)`
-        }
-        if (diceRef.current) {
-          const g = Math.round(fp * 20)
-          diceRef.current.style.filter = `drop-shadow(0 0 ${g}px rgba(255,${Math.round(80 + fp * 80)},0,${0.4 + fp * 0.6}))`
-        }
-        if (fp > 0.3 && Math.random() < 0.12) spawnEmber(false)
-      }
-
-      if (p >= launchAt && !launched) {
-        launched = true
-        if (outerRef.current) outerRef.current.style.height = '80px'
-        if (midRef.current) midRef.current.style.height = '60px'
-        if (innerRef.current) innerRef.current.style.height = '40px'
-        if (groupRef.current) {
-          groupRef.current.style.transition = `transform ${(1 - launchAt) * duration}ms cubic-bezier(0.2,0,0.8,1)`
-          groupRef.current.style.transform = 'translateY(-900px)'
-        }
-        if (trackRef.current) {
-          trackRef.current.style.transition = 'opacity 0.3s'
-          trackRef.current.style.opacity = '0'
-        }
-        for (let i = 0; i < 20; i++) setTimeout(() => spawnEmber(true), i * 60)
-        setTimeout(() => {
-          if (titleRef.current) {
-            titleRef.current.style.animation = 'karáchoIn 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards'
-            titleRef.current.style.opacity = '1'
-          }
-        }, (1 - launchAt) * duration * 0.4)
-      }
-
-      if (p < 1) {
-        raf = requestAnimationFrame(update)
-      } else {
-        setTimeout(onDone, 800)
-      }
-    }
-
-    raf = requestAnimationFrame(update)
-    return () => cancelAnimationFrame(raf)
-  }, [])
-
-  return (
-    <div ref={screenRef} style={{
-      position: 'fixed', inset: 0, background: 'var(--space-bg)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      zIndex: 9999, overflow: 'hidden',
-    }}>
-      <style>{`
-        @keyframes emberFly {
-          0% { opacity:1; transform:translate(0,0) scale(1); }
-          100% { opacity:0; transform:translate(var(--ex),var(--ey)) scale(0.2); }
-        }
-        @keyframes karáchoIn {
-          0% { opacity:0; transform:scale(0.4) translateY(20px); }
-          60% { opacity:1; transform:scale(1.08) translateY(-4px); }
-          100% { opacity:1; transform:scale(1) translateY(0); }
-        }
-      `}</style>
-
-      {/* Raumhintergrund: Sterne (funkeln per CSS) und ein Planet, beide hinter
-          der Rakete (z-index -1 im Stapel des Ladebildschirms). */}
-      <div className="starfield" />
-      <div className="splash-planet" />
-
-      {/* Rakete: Würfel oben, Flamme unten */}
-      <div ref={groupRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div ref={diceRef} style={{ fontSize: 52, zIndex: 2 }}>🎲</div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -4 }}>
-          <div ref={outerRef} style={{
-            width: 28, height: 0,
-            background: 'linear-gradient(to bottom, #ff6600, #ff9900, #ffcc00, transparent)',
-            borderRadius: '20% 20% 50% 50%',
-          }} />
-          <div ref={midRef} style={{
-            width: 16, height: 0, marginTop: -4,
-            background: 'linear-gradient(to bottom, #ff3300, #ff6600, #ffee00, transparent)',
-            borderRadius: '20% 20% 50% 50%',
-          }} />
-          <div ref={innerRef} style={{
-            width: 8, height: 0, marginTop: -6,
-            background: 'linear-gradient(to bottom, #fff, #ffee88, transparent)',
-            borderRadius: '20% 20% 50% 50%',
-          }} />
-        </div>
-      </div>
-
-      {/* Progress */}
-      <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-        <div ref={trackRef} style={{ width: 180, height: 5, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
-          <div ref={fillRef} className="splash-fill" style={{ height: '100%', width: '0%', borderRadius: 3 }} />
-        </div>
-      </div>
-
-      {/* Karacho Kniffel Titel */}
-      <div ref={titleRef} style={{
-        position: 'absolute', opacity: 0,
-        display: 'flex', gap: 12, alignItems: 'center',
-      }}>
-        <span className="splash-title-a" style={{ fontSize: 28, fontWeight: 'bold', letterSpacing: 3 }}>KARACHO</span>
-        <span className="splash-title-b" style={{ fontSize: 28, fontWeight: 'bold', letterSpacing: 3 }}>KNIFFEL</span>
-      </div>
-    </div>
-  )
 }
 
 export default function App() {
@@ -607,7 +455,7 @@ export default function App() {
     setShowResult(false);
   }
 
-  if (loading) return <LoadingScreen onDone={() => setLoading(false)} />;
+  if (loading) return <LaunchSplash onDone={() => setLoading(false)} />;
   if (authLoading)
     return (
       <div

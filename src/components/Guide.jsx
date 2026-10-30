@@ -184,9 +184,10 @@ export default function Guide() {
             border: 'none',
             color: 'white',
             borderRadius: '50%',
-            width: 28,
-            height: 28,
-            fontSize: 14,
+            // 44 px Tippfläche (war 28): die Kopfzeile ist 50 px hoch, passt.
+            width: 44,
+            height: 44,
+            fontSize: 16,
             cursor: 'pointer',
             lineHeight: 1,
           }}
@@ -336,6 +337,13 @@ export default function Guide() {
           <div style={{ color: MUTED, fontSize: 13, lineHeight: 1.55 }}>
             Gespeichert wird erst mit <B>Weiter</B> oder <B>Nochmal</B>. Bis
             dahin kommst du mit <B>Korrektur</B> zurück in den Block.
+          </div>
+        </Section>
+
+        <Section title="GEHEIMTIPP">
+          <div style={{ color: MUTED, fontSize: 13, lineHeight: 1.55 }}>
+            Tippe im Menü <B>dreimal schnell auf die Erde</B> — dort wartet die
+            Strategie-Seite.
           </div>
         </Section>
 

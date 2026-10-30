@@ -223,11 +223,13 @@ export default function Statistics({ onBack }) {
               style={{
                 flex: 1,
                 // Bei vier Tabs wird die Zeile am Handy eng.
-                padding: '8px 2px',
+                padding: '8px 0',
+                // Tippfläche mind. 44 px und Schrift mind. 12 px (iPhone SE).
+                minHeight: 44,
                 borderRadius: 'var(--radius-sm)',
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 'bold',
                 background: tab === id ? 'var(--primary)' : 'var(--surface)',
                 color: tab === id ? 'white' : 'var(--text-dim)',

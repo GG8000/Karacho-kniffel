@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDuration } from '../lib/cityStats'
 import { WORLD_RINGS } from '../lib/worldLand'
 
@@ -21,6 +21,18 @@ const PAD = 24
 const MIN_SPAN_DEG = 30
 
 const RAD = Math.PI / 180
+
+// Zoomstufen der Karte. Unter 1 geht es heraus, damit man das Land um die
+// Städte herum sehen kann; die Obergrenze reicht bis auf Stadtniveau.
+const MIN_ZOOM = 0.5
+const MAX_ZOOM = 16
+// So weit darf die Mitte des Ausschnitts vom Startbild wegwandern, sonst
+// verschiebt man die Karte ins Leere.
+const MAX_PAN = 3
+// Ab dieser Strecke in px ist ein Fingerdruck ein Ziehen und kein Antippen.
+const DRAG_PX = 5
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
 // Web-Mercator. x und y kommen beide in Radiant heraus, damit derselbe Maßstab
 // für beide Achsen gilt — sonst wäre die Karte verzerrt und die Projektion für
@@ -80,7 +92,8 @@ function buildView(cities) {
   const sy = (y) => H / 2 - (y - cy) * scale // Nord oben
 
   // Länderumrisse (src/lib/worldLand.js, erzeugt von scripts/build-world.mjs).
-  // Was aus dem Bild läuft, schneidet das svg von selbst ab.
+  // Was aus dem Bild läuft, schneidet das svg von selbst ab — und kommt beim
+  // Verschieben und Herauszoomen wieder ins Bild.
   const land = WORLD_RINGS.map((ring) => {
     let d = ''
     for (let i = 0; i < ring.length; i += 2) {
@@ -94,24 +107,184 @@ function buildView(cities) {
   const stepLng = gridStep(W / scale / RAD)
   const centerLat = Math.atan(Math.sinh(cy)) / RAD
   const lines = []
-  for (let i = -6; i <= 6; i++) {
+  // Das Gitter reicht weit über das Startbild hinaus, damit beim Verschieben
+  // und Herauszoomen keine Lücken entstehen.
+  const X0 = -MAX_PAN * W
+  const X1 = (MAX_PAN + 1) * W
+  const Y0 = -MAX_PAN * H
+  const Y1 = (MAX_PAN + 1) * H
+  for (let i = -24; i <= 24; i++) {
     const lng = Math.round(cx / RAD / stepLng + i) * stepLng
     const x = sx(lng * RAD)
-    if (x > 0 && x < W) lines.push({ key: `v${lng}`, x1: x, x2: x, y1: 0, y2: H })
+    if (x > X0 && x < X1) lines.push({ key: `v${lng}`, x1: x, x2: x, y1: Y0, y2: Y1 })
 
     const lat = Math.round(centerLat / stepLng + i) * stepLng
     if (Math.abs(lat) > 85) continue
     const y = sy(Math.log(Math.tan(Math.PI / 4 + (lat * RAD) / 2)))
-    if (y > 0 && y < H) lines.push({ key: `h${lat}`, x1: 0, x2: W, y1: y, y2: y })
+    if (y > Y0 && y < Y1) lines.push({ key: `h${lat}`, x1: X0, x2: X1, y1: y, y2: y })
   }
 
   return { land, lines, dots: points.map((p) => ({ city: p.city, x: sx(p.x), y: sy(p.y) })) }
+}
+
+// Verschieben und Zoomen der Karte. Der Zustand ist eine Transformation im
+// viewBox-Raum: Punkt p landet bei p * k + (tx, ty). Maus (Ziehen, Mausrad) und
+// Touch (ein Finger zieht, zwei Finger zoomen) laufen über Pointer Events,
+// damit es nur einen Weg gibt.
+function usePanZoom() {
+  const [t, setT] = useState({ k: 1, tx: 0, ty: 0 })
+  const svgRef = useRef(null)
+  const pointers = useRef(new Map())
+  const lastDist = useRef(1) // Fingerabstand beim letzten Zoom-Schritt
+  const moved = useRef(false)
+
+  // Zoom um einen Punkt (in viewBox-Einheiten), der dabei stehen bleibt.
+  function zoomAt(factor, px, py) {
+    setT((cur) => {
+      const k = clamp(cur.k * factor, MIN_ZOOM, MAX_ZOOM)
+      const f = k / cur.k
+      return limit({ k, tx: px - (px - cur.tx) * f, ty: py - (py - cur.ty) * f })
+    })
+  }
+
+  // Hält die Mitte des Ausschnitts in Reichweite des Startbilds.
+  function limit({ k, tx, ty }) {
+    const cx = (W / 2 - tx) / k
+    const cy = (H / 2 - ty) / k
+    const nx = clamp(cx, -MAX_PAN * W, (MAX_PAN + 1) * W)
+    const ny = clamp(cy, -MAX_PAN * H, (MAX_PAN + 1) * H)
+    return { k, tx: W / 2 - nx * k, ty: H / 2 - ny * k }
+  }
+
+  // Bildschirm-px -> viewBox-Einheiten. meet-Skalierung: die Karte ist gleich
+  // breit wie hoch skaliert, das svg-Rechteck kann aber ein anderes Verhältnis
+  // haben.
+  function toView(clientX, clientY) {
+    const r = svgRef.current.getBoundingClientRect()
+    const scale = Math.min(r.width / W, r.height / H)
+    const offX = (r.width - W * scale) / 2
+    const offY = (r.height - H * scale) / 2
+    return {
+      x: (clientX - r.left - offX) / scale,
+      y: (clientY - r.top - offY) / scale,
+      scale,
+    }
+  }
+
+  // Mausrad muss die Seite anhalten, das geht nur mit einem nicht-passiven
+  // Listener — React hängt seine Wheel-Handler passiv an.
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el) return
+    function onWheel(e) {
+      e.preventDefault()
+      const { x, y } = toView(e.clientX, e.clientY)
+      zoomAt(Math.exp(-e.deltaY * 0.0015), x, y)
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  })
+
+  const handlers = {
+    onPointerDown(e) {
+      // sx/sy: Startpunkt, an dem sich entscheidet, ob es ein Ziehen wird.
+      pointers.current.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY,
+        sx: e.clientX,
+        sy: e.clientY,
+      })
+      moved.current = false
+      if (pointers.current.size === 2) {
+        const [a, b] = [...pointers.current.values()]
+        lastDist.current = Math.hypot(a.x - b.x, a.y - b.y) || 1
+        moved.current = true
+        svgRef.current.setPointerCapture?.(e.pointerId)
+      }
+    },
+    onPointerMove(e) {
+      const prev = pointers.current.get(e.pointerId)
+      if (!prev) return
+      const cur = { ...prev, x: e.clientX, y: e.clientY }
+      pointers.current.set(e.pointerId, cur)
+
+      // Zwei Finger: pro Schritt um das Verhältnis zur letzten Distanz zoomen.
+      if (pointers.current.size >= 2) {
+        const [a, b] = [...pointers.current.values()]
+        const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1
+        const mid = toView((a.x + b.x) / 2, (a.y + b.y) / 2)
+        zoomAt(dist / lastDist.current, mid.x, mid.y)
+        lastDist.current = dist
+        return
+      }
+
+      // Ein Finger: erst ab einer Mindeststrecke ziehen. Ein Antippen einer
+      // Blase darf nicht verrutschen, und der Pointer wird erst dann gefangen
+      // (sonst käme der Klick nie bei der Blase an).
+      if (!moved.current) {
+        if (Math.hypot(cur.x - cur.sx, cur.y - cur.sy) < DRAG_PX) return
+        moved.current = true
+        svgRef.current.setPointerCapture?.(e.pointerId)
+      }
+      const { scale } = toView(0, 0)
+      const dx = (cur.x - prev.x) / scale
+      const dy = (cur.y - prev.y) / scale
+      setT((t0) => limit({ k: t0.k, tx: t0.tx + dx, ty: t0.ty + dy }))
+    },
+    onPointerUp(e) {
+      pointers.current.delete(e.pointerId)
+    },
+    onPointerCancel(e) {
+      pointers.current.delete(e.pointerId)
+    },
+    onDoubleClick(e) {
+      const { x, y } = toView(e.clientX, e.clientY)
+      zoomAt(2, x, y)
+    },
+  }
+
+  return {
+    t,
+    svgRef,
+    handlers,
+    // true, wenn der letzte Druck ein Ziehen war — dann kein Antippen werten.
+    wasDrag: () => moved.current,
+    zoomBy: (f) => zoomAt(f, W / 2, H / 2),
+    reset: () => setT({ k: 1, tx: 0, ty: 0 }),
+    atRest: t.k === 1 && t.tx === 0 && t.ty === 0,
+  }
+}
+
+function MapButton({ label, onClick, disabled, children }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        border: '1px solid var(--glass-border)',
+        background: 'rgba(11, 16, 48, 0.72)',
+        color: 'white',
+        fontSize: 20,
+        lineHeight: 1,
+        cursor: 'pointer',
+        opacity: disabled ? 0.4 : 1,
+      }}
+    >
+      {children}
+    </button>
+  )
 }
 
 // Blasen-Karte plus Städte-Rangliste. Der Ausschnitt richtet sich nach den
 // echten Daten, die Karte funktioniert damit für eine Stadt wie für die Welt.
 export default function CityMap({ cities = [] }) {
   const [selected, setSelected] = useState(null)
+  const { t, svgRef, handlers, wasDrag, zoomBy, reset, atRest } = usePanZoom()
   // Muss über dem frühen return stehen — Hooks laufen sonst nicht in jeder
   // Runde in derselben Reihenfolge.
   const view = useMemo(() => buildView(cities), [cities])
@@ -138,67 +311,110 @@ export default function CityMap({ cities = [] }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {view && (
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="xMidYMid meet"
-          style={{
-            width: '100%',
-            height: 'auto',
-            aspectRatio: `${W} / ${H}`,
-            display: 'block',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: 'var(--radius-sm)',
-          }}
-        >
-          {view.land.map((d, i) => (
-            <path key={i} d={d} fill={LAND} stroke={COAST} strokeWidth={0.5} />
-          ))}
-          {view.lines.map((l) => (
-            <line
-              key={l.key}
-              x1={l.x1}
-              x2={l.x2}
-              y1={l.y1}
-              y2={l.y2}
-              stroke={GRID}
-            />
-          ))}
-          {view.dots.map(({ city: c, x, y }) => {
-            const r = 4 + 9 * Math.sqrt(c.players / maxPlayers)
-            const fill = heat(
-              c.totalSeconds / Math.max(c.players, 1) / maxPerDevice,
-            )
-            const active = selected === c.city
-            return (
-              <g
-                key={`${c.city}-${c.country}`}
-                onClick={() => setSelected(active ? null : c.city)}
-                style={{ cursor: 'pointer' }}
-              >
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={r}
-                  fill={fill}
-                  fillOpacity={active ? 0.85 : 0.45}
-                  stroke={fill}
-                  strokeWidth={active ? 2 : 1}
+        <div style={{ position: 'relative', width: '100%', maxWidth: 480, margin: '0 auto' }}>
+          <svg
+            ref={svgRef}
+            {...handlers}
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            aria-label="Karte der Städte. Ziehen verschiebt, zwei Finger oder Mausrad zoomen."
+            style={{
+              width: '100%',
+              height: 'auto',
+              aspectRatio: `${W} / ${H}`,
+              // Auf Tablet und Laptop nicht größer als ein Bildschirmteil.
+              maxHeight: 'min(48vh, 340px)',
+              display: 'block',
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: 'var(--radius-sm)',
+              // Im Grundzustand darf die Seite per Wisch scrollen; sobald die
+              // Karte bewegt ist, gehört die Geste ihr (siehe usePanZoom).
+              touchAction: atRest ? 'pan-y' : 'none',
+              cursor: 'grab',
+            }}
+          >
+            <g transform={`translate(${t.tx} ${t.ty}) scale(${t.k})`}>
+              {view.land.map((d, i) => (
+                <path
+                  key={i}
+                  d={d}
+                  fill={LAND}
+                  stroke={COAST}
+                  strokeWidth={0.5}
+                  vectorEffect="non-scaling-stroke"
                 />
-                {(labelled.has(c.city) || active) && (
-                  <text
-                    x={x}
-                    y={y - r - 4}
-                    fill={active ? 'white' : MUTED}
-                    fontSize="9"
-                    textAnchor="middle"
+              ))}
+              {view.lines.map((l) => (
+                <line
+                  key={l.key}
+                  x1={l.x1}
+                  x2={l.x2}
+                  y1={l.y1}
+                  y2={l.y2}
+                  stroke={GRID}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+              {view.dots.map(({ city: c, x, y }) => {
+                // Blasen und Schrift bleiben beim Zoomen gleich groß am
+                // Bildschirm; die Karte darunter wächst.
+                const r = (4 + 9 * Math.sqrt(c.players / maxPlayers)) / t.k
+                const fill = heat(
+                  c.totalSeconds / Math.max(c.players, 1) / maxPerDevice,
+                )
+                const active = selected === c.city
+                return (
+                  <g
+                    key={`${c.city}-${c.country}`}
+                    onClick={() => {
+                      if (wasDrag()) return
+                      setSelected(active ? null : c.city)
+                    }}
+                    style={{ cursor: 'pointer' }}
                   >
-                    {c.city}
-                  </text>
-                )}
-              </g>
-            )
-          })}
-        </svg>
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r={r}
+                      fill={fill}
+                      fillOpacity={active ? 0.85 : 0.45}
+                      stroke={fill}
+                      strokeWidth={(active ? 2 : 1) / t.k}
+                    />
+                    {(active || t.k >= 3 || (t.k >= 1 && labelled.has(c.city))) && (
+                      <text
+                        x={x}
+                        y={y - r - 4 / t.k}
+                        // Als style: ein fill-Attribut versteht var(--…) nicht
+                        // und fiele auf Schwarz zurück.
+                        style={{ fill: active ? 'white' : MUTED }}
+                        fontSize={9 / t.k}
+                        textAnchor="middle"
+                      >
+                        {c.city}
+                      </text>
+                    )}
+                  </g>
+                )
+              })}
+            </g>
+          </svg>
+
+          <div
+            style={{
+              position: 'absolute',
+              right: 8,
+              bottom: 8,
+              display: 'flex',
+              gap: 6,
+            }}
+          >
+            <MapButton label="Hineinzoomen" onClick={() => zoomBy(1.6)}>+</MapButton>
+            <MapButton label="Herauszoomen" onClick={() => zoomBy(1 / 1.6)}>−</MapButton>
+            <MapButton label="Ansicht zurücksetzen" onClick={reset} disabled={atRest}>⟲</MapButton>
+          </div>
+        </div>
       )}
 
       <div
